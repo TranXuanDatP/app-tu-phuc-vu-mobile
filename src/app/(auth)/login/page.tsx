@@ -1,47 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Droplets } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
 import { usePhoneLogin } from "@/features/auth/hooks";
 import { useSession } from "@/lib/auth-client";
 
-// Vietnamese phone number: optional +84/0 prefix + 9-10 digits.
-const phoneSchema = z.object({
-  phoneNumber: z
-    .string()
-    .min(1, "Vui lòng nhập số điện thoại")
-    .regex(/^(0|\+84)(\d{9,10})$/, "Số điện thoại không hợp lệ (vd: 0987654321)"),
-});
-
-type PhoneForm = z.infer<typeof phoneSchema>;
+// Vietnamese phone: 0 or +84 prefix + 9–10 digits.
+const PHONE_RE = /^(0|\+84)\d{9,10}$/;
 
 export default function LoginPage() {
   const { data: session, isPending } = useSession();
   const login = usePhoneLogin();
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(0);
-
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    formState: { errors },
-  } = useForm<PhoneForm>({
-    resolver: zodResolver(phoneSchema),
-    defaultValues: { phoneNumber: "" },
-  });
 
   // Already logged in → go to dashboard.
   useEffect(() => {
@@ -66,6 +43,16 @@ export default function LoginPage() {
 
   if (isPending) return null;
 
+  function handleSendOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!PHONE_RE.test(phone.trim())) {
+      setPhoneError("Số điện thoại không hợp lệ (vd: 0987654321)");
+      return;
+    }
+    setPhoneError(null);
+    login.sendOtp(phone.trim());
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
@@ -82,21 +69,24 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           {login.step === "phone" ? (
-            <form
-              onSubmit={handleSubmit(({ phoneNumber }) => login.sendOtp(phoneNumber))}
-              className="space-y-4"
-            >
+            <form onSubmit={handleSendOtp} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber">Số điện thoại</Label>
                 <Input
                   id="phoneNumber"
+                  name="phoneNumber"
                   type="tel"
                   inputMode="numeric"
+                  autoComplete="tel"
                   placeholder="0987654321"
-                  {...register("phoneNumber")}
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    if (phoneError) setPhoneError(null);
+                  }}
                 />
-                {errors.phoneNumber && (
-                  <p className="text-sm text-destructive">{errors.phoneNumber.message}</p>
+                {phoneError && (
+                  <p className="text-sm text-destructive">{phoneError}</p>
                 )}
               </div>
               <Button type="submit" className="w-full" disabled={login.isSending}>
@@ -115,19 +105,24 @@ export default function LoginPage() {
               className="space-y-4"
             >
               <div className="space-y-2">
-                <Label>Mã OTP (6 chữ số)</Label>
-                <div className="flex justify-center">
-                  <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
+                <Label htmlFor="otp">Mã OTP (6 chữ số)</Label>
+                <Input
+                  id="otp"
+                  name="otp"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="••••••"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="text-center text-2xl tracking-[0.5em]"
+                />
+                {otp.length > 0 && otp.length < 6 && (
+                  <p className="text-sm text-muted-foreground">
+                    Còn thiếu {6 - otp.length} chữ số.
+                  </p>
+                )}
               </div>
               <Button type="submit" className="w-full" disabled={login.isVerifying || otp.length !== 6}>
                 {login.isVerifying ? "Đang xác thực..." : "Xác thực"}
@@ -146,11 +141,9 @@ export default function LoginPage() {
                   variant="link"
                   className="h-auto p-0"
                   disabled={secondsLeft > 0}
-                  onClick={() => login.sendOtp(getValues("phoneNumber"))}
+                  onClick={() => login.sendOtp(login.phoneNumber)}
                 >
-                  {secondsLeft > 0
-                    ? `Gửi lại sau ${secondsLeft}s`
-                    : "Gửi lại OTP"}
+                  {secondsLeft > 0 ? `Gửi lại sau ${secondsLeft}s` : "Gửi lại OTP"}
                 </Button>
               </div>
             </form>
