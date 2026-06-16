@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.5rem;
+  --background: oklab(0.99 0 0);
+  --foreground: oklab(0.21 0.0064 0.012);
+  --card: oklab(1 0 0);
+  --card-foreground: oklab(0.21 0.0064 0.012);
+  --popover: oklab(1 0 0);
+  --popover-foreground: oklab(0.21 0.0064 0.012);
+  --primary: oklab(0.546 0.1875 -0.1147);
+  --primary-foreground: oklab(0.985 0 0);
+  --secondary: oklab(0.967 0.0029 -0.0052);
+  --secondary-foreground: oklab(0.21 0.0064 0.012);
+  --muted: oklab(0.967 0.0029 -0.0052);
+  --muted-foreground: oklab(0.552 0.0087 0.0061);
+  --accent: oklab(0.967 0.0029 -0.0052);
+  --accent-foreground: oklab(0.21 0.0064 0.012);
+  --destructive: oklab(0.6193 0.2147 0.1174);
+  --destructive-foreground: oklab(0.985 0 0);
+  --border: oklab(0.922 0.0036 -0.0069);
+  --input: oklab(0.922 0.0036 -0.0069);
+  --ring: oklab(0.546 0.1875 -0.1147);
+}
+
+.dark {
+  --background: oklab(0.21 0.0064 0.012);
+  --foreground: oklab(0.985 0 0);
+  --card: oklab(0.26 0.0077 0.0149);
+  --card-foreground: oklab(0.985 0 0);
+  --popover: oklab(0.26 0.0077 0.0149);
+  --popover-foreground: oklab(0.985 0 0);
+  --primary: oklab(0.6664 0.1577 -0.1023);
+  --primary-foreground: oklab(0.21 0.0064 0.012);
+  --secondary: oklab(0.335 0.0117 0.0205);
+  --secondary-foreground: oklab(0.985 0 0);
+  --muted: oklab(0.335 0.0117 0.0205);
+  --muted-foreground: oklab(0.708 0.0096 0.0067);
+  --accent: oklab(0.335 0.0117 0.0205);
+  --accent-foreground: oklab(0.985 0 0);
+  --destructive: oklab(0.6815 0.1902 0.0965);
+  --destructive-foreground: oklab(0.985 0 0);
+  --border: oklab(1 0 0 / 12%);
+  --input: oklab(1 0 0 / 18%);
+  --ring: oklab(0.6664 0.1577 -0.1023);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+}
+
+/* Minimal animation utilities (replaces tw-animate-css dep) used by shadcn primitives. */
+@layer utilities {
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  @keyframes zoom-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes zoom-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.95); }
+  }
+  @keyframes caret-blink {
+    0%, 70%, 100% { opacity: 1; }
+    20%, 50% { opacity: 0; }
+  }
+  .animate-in { animation-duration: 200ms; animation-fill-mode: both; }
+  .animate-out { animation-duration: 200ms; animation-fill-mode: both; }
+  .fade-in-0 { animation-name: fade-in; }
+  .fade-out-0 { animation-name: fade-out; }
+  .zoom-in-95 { animation-name: zoom-in; }
+  .zoom-out-95 { animation-name: zoom-out; }
+  .animate-caret-blink { animation: caret-blink 1s ease-out infinite; }
+}
+
