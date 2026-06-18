@@ -11,6 +11,7 @@ import {
   Skeleton,
 } from "@/components/ui";
 import { ErrorState } from "@/components/state";
+import { ChannelBadge, channelMeta } from "@/components/channel-badge";
 import { useSessionDetail, useSessionEvents } from "@/features/session/queries";
 import {
   eventDescription,
@@ -18,6 +19,7 @@ import {
   sessionChannelLabel,
 } from "@/features/session/labels";
 import { formatDateTime } from "@/lib/utils";
+import type { SessionChannel } from "@/lib/types/entities";
 
 export default function SessionsPage() {
   const detail = useSessionDetail();
@@ -76,14 +78,16 @@ export default function SessionsPage() {
             <ol className="relative space-y-5 border-l pl-6">
               {events.data.events.map((e) => (
                 <li key={e.id} className="relative">
-                  <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-primary" />
+                  <span
+                    className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full ${channelMeta[e.channel as SessionChannel]?.dot ?? "bg-primary"}`}
+                  />
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">{eventLabel(e.type)}</Badge>
-                    <Badge variant="outline">{sessionChannelLabel[e.channel]}</Badge>
+                    <ChannelBadge channel={e.channel} />
                     <span className="text-xs text-muted-foreground">{formatDateTime(e.timestamp)}</span>
                   </div>
                   {eventDescription(e) && (
-                    <p className="mt-1 text-xs text-muted-foreground">{eventDescription(e)}</p>
+                    <p className="mt-1 text-sm">{eventDescription(e)}</p>
                   )}
                 </li>
               ))}
