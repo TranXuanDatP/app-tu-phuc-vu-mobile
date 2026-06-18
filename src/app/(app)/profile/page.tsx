@@ -39,7 +39,9 @@ import {
   useRelatedAccounts,
   useUpdateProfile,
 } from "@/features/customers/queries";
-import { channelLabel, classificationLabel } from "@/features/customers/labels";
+import { classificationLabel } from "@/features/customers/labels";
+import { ChannelBadge, channelMeta } from "@/components/channel-badge";
+import type { SessionChannel } from "@/lib/types/entities";
 import { formatDate, formatDateTime } from "@/lib/utils";
 
 export default function ProfilePage() {
@@ -194,10 +196,10 @@ function TimelineTab() {
         <ol className="relative space-y-5 border-l pl-6">
           {data.entries.map((e, i) => (
             <li key={i} className="relative">
-              <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-primary" />
+              <span className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full ${channelMeta[e.channel as SessionChannel]?.dot ?? "bg-primary"}`} />
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary">{e.eventType}</Badge>
-                {e.channel && <Badge variant="outline">{channelLabel[e.channel] ?? e.channel}</Badge>}
+                {e.channel && <ChannelBadge channel={e.channel} />}
                 <span className="text-xs text-muted-foreground">{formatDateTime(e.timestamp)}</span>
               </div>
               <p className="mt-1 text-sm">{e.summary}</p>
