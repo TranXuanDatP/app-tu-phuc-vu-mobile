@@ -3,53 +3,80 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
-  /* Light, airy palette with a professional water-utility blue. */
-  --background: #f4f7fb;          /* very light blue-tinted */
-  --foreground: #0f1b2d;          /* deep slate */
-  --card: #ffffff;
-  --card-foreground: #0f1b2d;
+  --radius: 1.0625rem; /* 17px — rounded cards per UI spec */
+  /* QUAWACO water-utility palette (from My-Cong-ty_App-UI.html spec) */
+  --background: #eef6f8; /* foam */
+  --foreground: #0a2a38; /* ink */
+  --card: #ffffff;       /* surface */
+  --card-foreground: #0a2a38;
   --popover: #ffffff;
-  --popover-foreground: #0f1b2d;
-  --primary: #2563eb;             /* blue-600 */
+  --popover-foreground: #0a2a38;
+  --primary: #0b5a78; /* deep teal — primary action */
   --primary-foreground: #ffffff;
-  --secondary: #eaf1fb;           /* light blue-gray */
-  --secondary-foreground: #1e3a5f;
-  --muted: #eef2f7;
-  --muted-foreground: #5b6b80;
-  --accent: #e3eefc;              /* soft blue accent */
-  --accent-foreground: #1d4ed8;   /* blue-700 */
-  --destructive: #dc2626;
+  --secondary: #dff1f5; /* aqua-soft */
+  --secondary-foreground: #0b5a78;
+  --muted: #eef6f8; /* foam */
+  --muted-foreground: #5e7683;
+  --accent: #dff1f5; /* aqua-soft */
+  --accent-foreground: #0b5a78;
+  --destructive: #e5533c; /* coral */
   --destructive-foreground: #ffffff;
-  --success: #16a34a;
+  --success: #1b9e77; /* mint */
   --success-foreground: #ffffff;
-  --warning: #d97706;
+  --warning: #c9791a; /* amber */
   --warning-foreground: #ffffff;
-  --border: #d8e2ee;
-  --input: #d8e2ee;
-  --ring: #2563eb;
+  --border: #e3ecef;
+  --input: #e3ecef;
+  --ring: #16a6c2; /* aqua */
+  /* design semantic tokens (used directly by new components) */
+  --ink: #0a2a38;
+  --deep: #0b5a78;
+  --aqua: #16a6c2;
+  --aqua-soft: #dff1f5;
+  --foam: #eef6f8;
+  --mint: #1b9e77;
+  --mint-soft: #e1f3ec;
+  --amber: #c9791a;
+  --amber-soft: #fbeedc;
+  --coral: #e5533c;
+  --coral-soft: #fce6e1;
 }
 
 .dark {
-  --background: oklab(0.21 0.0064 0.012);
-  --foreground: oklab(0.985 0 0);
-  --card: oklab(0.26 0.0077 0.0149);
-  --card-foreground: oklab(0.985 0 0);
-  --popover: oklab(0.26 0.0077 0.0149);
-  --popover-foreground: oklab(0.985 0 0);
-  --primary: oklab(0.6664 0.1577 -0.1023);
-  --primary-foreground: oklab(0.21 0.0064 0.012);
-  --secondary: oklab(0.335 0.0117 0.0205);
-  --secondary-foreground: oklab(0.985 0 0);
-  --muted: oklab(0.335 0.0117 0.0205);
-  --muted-foreground: oklab(0.708 0.0096 0.0067);
-  --accent: oklab(0.335 0.0117 0.0205);
-  --accent-foreground: oklab(0.985 0 0);
-  --destructive: oklab(0.6815 0.1902 0.0965);
-  --destructive-foreground: oklab(0.985 0 0);
-  --border: oklab(1 0 0 / 12%);
-  --input: oklab(1 0 0 / 18%);
-  --ring: oklab(0.6664 0.1577 -0.1023);
+  --background: #07202b;
+  --foreground: #eef6f8;
+  --card: #0b2c3a;
+  --card-foreground: #eef6f8;
+  --popover: #0b2c3a;
+  --popover-foreground: #eef6f8;
+  --primary: #16a6c2;
+  --primary-foreground: #07202b;
+  --secondary: #103a4d;
+  --secondary-foreground: #dff1f5;
+  --muted: #103a4d;
+  --muted-foreground: #9fb6c2;
+  --accent: #103a4d;
+  --accent-foreground: #dff1f5;
+  --destructive: #e5533c;
+  --destructive-foreground: #ffffff;
+  --success: #1b9e77;
+  --success-foreground: #ffffff;
+  --warning: #c9791a;
+  --warning-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.18);
+  --ring: #16a6c2;
+  --ink: #eef6f8;
+  --deep: #16a6c2;
+  --aqua: #16a6c2;
+  --aqua-soft: #103a4d;
+  --foam: #07202b;
+  --mint: #1b9e77;
+  --mint-soft: #0d3a2c;
+  --amber: #c9791a;
+  --amber-soft: #3a2a12;
+  --coral: #e5533c;
+  --coral-soft: #3a1c18;
 }
 
 @theme inline {
@@ -80,6 +107,18 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  /* design semantic colors → enables bg-deep / text-aqua / bg-aqua-soft etc. */
+  --color-ink: var(--ink);
+  --color-deep: var(--deep);
+  --color-aqua: var(--aqua);
+  --color-aqua-soft: var(--aqua-soft);
+  --color-foam: var(--foam);
+  --color-mint: var(--mint);
+  --color-mint-soft: var(--mint-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-coral: var(--coral);
+  --color-coral-soft: var(--coral-soft);
 }
 
 @layer base {
@@ -89,6 +128,9 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
+    font-family: var(--font-bv), "Be Vietnam Pro", system-ui, -apple-system,
+      "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
@@ -121,5 +163,26 @@
   .zoom-in-95 { animation-name: zoom-in; }
   .zoom-out-95 { animation-name: zoom-out; }
   .animate-caret-blink { animation: caret-blink 1s ease-out infinite; }
+
+  /* ── Data-rich dashboard: entrance + pulse + glassmorphism ── */
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+  .fade-in-up { animation: fade-in-up 450ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-pulse-soft { animation: pulse-soft 2.2s ease-in-out infinite; }
+  @keyframes drift {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .glass {
+    background: color-mix(in oklab, var(--card) 70%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
 }
 

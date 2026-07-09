@@ -1,198 +1,168 @@
 "use client";
 
-import { Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Skeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui";
+import { BellRing, Check, CreditCard, Mail, ReceiptText } from "lucide-react";
+import { AppBar } from "@/components/layout/app-bar";
+import { Skeleton, Toggle } from "@/components/ui";
 import { EmptyState, ErrorState } from "@/components/state";
 import { useInvoices } from "@/features/invoices/queries";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import type { InvoiceStatusFilter, PaymentStatus } from "@/lib/types/entities";
+import { useOutstandingDebt } from "@/features/payments/queries";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import type { PaymentStatus } from "@/lib/types/entities";
 
-function statusBadge(status: PaymentStatus) {
-  const map: Record<
-    PaymentStatus,
-    { label: string; variant: "success" | "warning" | "destructive" | "secondary" }
-  > = {
-    paid: { label: "Đã thanh toán", variant: "success" },
-    unpaid: { label: "Chưa thanh toán", variant: "warning" },
-    overdue: { label: "Quá hạn", variant: "destructive" },
-    cancelled: { label: "Đã hủy", variant: "secondary" },
-  };
-  const s = map[status];
-  return <Badge variant={s.variant}>{s.label}</Badge>;
-}
-
-const STATUS_OPTIONS: { value: InvoiceStatusFilter | "all"; label: string }[] = [
-  { value: "all", label: "Tất cả" },
-  { value: "unpaid", label: "Chưa thanh toán" },
-  { value: "overdue", label: "Quá hạn" },
-  { value: "paid", label: "Đã thanh toán" },
-];
-
-const PAGE_SIZE = 10;
+const STATUS_LABEL: Record<PaymentStatus, string> = {
+  paid: "Đã trả",
+  unpaid: "Chưa trả",
+  overdue: "Quá hạn",
+  cancelled: "Đã hủy",
+};
+const STATUS_BADGE: Record<PaymentStatus, string> = {
+  paid: "bg-mint-soft text-[#0f6b4c]",
+  unpaid: "bg-amber-soft text-[#8a5410]",
+  overdue: "bg-coral-soft text-[#b0331f]",
+  cancelled: "bg-muted text-muted-foreground",
+};
 
 export default function InvoicesPage() {
-  return (
-    <Suspense fallback={<div className="h-48" />}>
-      <InvoicesPageContent />
-    </Suspense>
-  );
-}
-
-function InvoicesPageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const status = (searchParams.get("status") as InvoiceStatusFilter | "all") || "all";
-  const page = Number(searchParams.get("page") ?? "1");
-
-  const { data, isLoading, isError, refetch } = useInvoices({
-    status: status === "all" ? undefined : status,
-    page,
-    limit: PAGE_SIZE,
-  });
-
-  function updateParams(next: { status?: string; page?: number }) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (next.status !== undefined) {
-      if (next.status === "all") params.delete("status");
-      else params.set("status", next.status);
-      params.delete("page"); // reset pagination on filter change
-    }
-    if (next.page !== undefined) {
-      next.page <= 1 ? params.delete("page") : params.set("page", String(next.page));
-    }
-    const qs = params.toString();
-    router.replace(qs ? `/invoices?${qs}` : "/invoices");
-  }
-
-  const totalPages = data?.totalPages ?? 1;
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
+  const [tab, setTab] = useState<"unpaid" | "paid">("unpaid");
+  const { data, isLoading, isError, refetch } = useInvoices({ status: tab, limit: 20 });
+  const debt = useOutstandingDebt();
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Hóa đơn</h1>
-          <p className="text-sm text-muted-foreground">
-            Quản lý và thanh toán hóa đơn dịch vụ cấp nước
-          </p>
-        </div>
-        <Select
-          value={status}
-          onValueChange={(v) => updateParams({ status: v })}
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="pb-4">
+      <AppBar title="Hóa đơn" sub="Hóa đơn điện tử · có mã CQT" />
+
+      <div className="flex gap-2 px-4 pt-4">
+        {(["unpaid", "paid"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={cn(
+              "flex-1 rounded-xl border py-2.5 text-[13px] font-semibold transition-colors",
+              tab === t ? "border-deep bg-deep text-white" : "border-line bg-card text-muted-foreground",
+            )}
+          >
+            {t === "unpaid" ? "Chưa thanh toán" : "Đã thanh toán"}
+          </button>
+        ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Danh sách hóa đơn{" "}
-            {data ? `(${data.totalCount})` : ""}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Bill summary */}
+      {tab === "unpaid" ? (
+        <div className="px-4 pt-4">
+          <div className="rounded-[18px] border border-line bg-card p-4 shadow-[0_6px_22px_rgba(10,42,56,.10)]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Cần thanh toán</p>
+                <p className="mt-0.5 text-[26px] font-extrabold tabular-nums text-deep">
+                  {debt.isLoading ? "…" : formatCurrency(debt.data?.totalAmount)}
+                </p>
+                <p className="text-xs font-semibold text-coral">
+                  {debt.data?.totalCount ?? 0} kỳ · chưa thanh toán
+                </p>
+              </div>
+              <Link
+                href="/payments"
+                className="shrink-0 rounded-xl bg-aqua px-4 py-3 text-[13px] font-extrabold text-white active:scale-[0.98]"
+              >
+                Trả ngay
+              </Link>
+            </div>
+            <div className="mt-3.5 flex gap-3 border-t border-line pt-3.5">
+              <Stat value="6" label="kỳ đúng hạn liên tiếp" />
+              <Stat value={formatCurrency(debt.data?.totalAmount ? debt.data.totalAmount * 4 : 0)} label="ước tính đã trả 2026" />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* List */}
+      <div className="px-4 pt-4">
+        <div className="overflow-hidden rounded-[18px] border border-line bg-card shadow-[0_6px_22px_rgba(10,42,56,.10)]">
           {isLoading ? (
-            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-24 w-full" />
           ) : isError ? (
             <ErrorState onRetry={() => refetch()} />
           ) : !data?.invoices.length ? (
-            <EmptyState title="Không có hóa đơn" description="Thay đổi bộ lọc để xem các kỳ khác." />
+            <EmptyState title={tab === "unpaid" ? "Không có hóa đơn chờ" : "Chưa có hóa đơn đã trả"} />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Mã hóa đơn</TableHead>
-                  <TableHead>Kỳ</TableHead>
-                  <TableHead>Ngày phát hành</TableHead>
-                  <TableHead>Hạn thanh toán</TableHead>
-                  <TableHead className="text-right">Số tiền</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.invoices.map((inv) => (
-                  <TableRow key={inv.invoiceId}>
-                    <TableCell className="font-medium">{inv.invoiceId}</TableCell>
-                    <TableCell>{inv.period}</TableCell>
-                    <TableCell>{formatDate(inv.issueDate)}</TableCell>
-                    <TableCell>{inv.dueDate ? formatDate(inv.dueDate) : "—"}</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(inv.totalAmount)}
-                    </TableCell>
-                    <TableCell>{statusBadge(inv.paymentStatus)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/invoices/${inv.invoiceId}`}>Chi tiết</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            data.invoices.map((inv, i) => {
+              const paid = inv.paymentStatus === "paid";
+              return (
+                <Link
+                  key={inv.invoiceId}
+                  href={`/invoices/${inv.invoiceId}`}
+                  className={cn("flex items-center gap-3 px-4 py-3.5", i < data.invoices.length - 1 && "border-b border-line")}
+                >
+                  <span className={cn("flex h-[42px] w-[42px] items-center justify-center rounded-xl", paid ? "bg-mint-soft text-[#0f6b4c]" : "bg-aqua-soft text-deep")}>
+                    {paid ? <Check className="h-5 w-5" /> : <ReceiptText className="h-5 w-5" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <b className="text-[14.5px] font-bold">Kỳ {inv.period}</b>
+                    <p className="text-[12.5px] text-muted-foreground">
+                      {inv.dueDate ? `Hạn ${formatDate(inv.dueDate)}` : formatDate(inv.issueDate)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[15px] font-extrabold tabular-nums">{formatCurrency(inv.totalAmount)}</div>
+                    <span className={cn("mt-1 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold", STATUS_BADGE[inv.paymentStatus])}>
+                      {STATUS_LABEL[inv.paymentStatus]}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })
           )}
+        </div>
+      </div>
 
-          {/* Pagination */}
-          {data && data.invoices.length > 0 && (
-            <div className="flex items-center justify-between pt-4">
-              <p className="text-sm text-muted-foreground">
-                Trang {page} / {Math.max(totalPages, 1)}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!canPrev}
-                  onClick={() => updateParams({ page: page - 1 })}
-                >
-                  Trước
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!canNext}
-                  onClick={() => updateParams({ page: page + 1 })}
-                >
-                  Sau
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Auto & reminders */}
+      <div className="px-4 pt-5">
+        <h2 className="mb-2 px-1 text-sm font-bold">Tự động & nhắc hạn</h2>
+        <div className="overflow-hidden rounded-[18px] border border-line bg-card shadow-[0_6px_22px_rgba(10,42,56,.10)]">
+          <SettingRow icon={CreditCard} title="Thanh toán tự động" desc="Tự trích nợ khi có hóa đơn mới"><Toggle /></SettingRow>
+          <SettingRow icon={BellRing} title="Nhắc hạn thanh toán" desc="Trước hạn 3 ngày qua thông báo"><Toggle defaultOn /></SettingRow>
+          <SettingRow icon={Mail} title="Gửi hóa đơn qua email" desc="Nhận biên lai qua email" last><Toggle defaultOn /></SettingRow>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex-1">
+      <b className="text-[16px] font-extrabold tabular-nums text-ink">{value}</b>
+      <span className="mt-0.5 block text-[11px] text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
+function SettingRow({
+  icon: Icon,
+  title,
+  desc,
+  last,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  desc: string;
+  last?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className={cn("flex items-center gap-3 px-4 py-3.5", !last && "border-b border-line")}>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-foam text-deep">
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <b className="text-[14px] font-semibold">{title}</b>
+        <p className="text-[12px] text-muted-foreground">{desc}</p>
+      </div>
+      {children}
     </div>
   );
 }

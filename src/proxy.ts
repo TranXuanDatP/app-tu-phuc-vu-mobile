@@ -11,7 +11,23 @@ import { NextResponse, type NextRequest } from "next/server";
  * Note: cookie presence ≠ validity. A tampered/expired cookie still reaches the
  * (app) layout, where data queries hit the BFF and 401 → redirect to /login.
  */
-const protectedPaths = ["/dashboard", "/invoices", "/payments", "/profile"];
+const protectedPaths = [
+  "/dashboard",
+  "/invoices",
+  "/payments",
+  "/profile",
+  "/meters",
+  "/contracts",
+  "/tickets",
+  "/notifications",
+  "/sessions",
+  "/reports",
+  "/water-cutoff",
+  "/smart-meter",
+  "/segments",
+  "/contact",
+  "/chat",
+];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

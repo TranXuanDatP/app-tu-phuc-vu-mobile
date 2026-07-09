@@ -27,7 +27,7 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:px-6">
       <div className="flex items-center gap-2 md:hidden">
-        <span className="text-sm font-semibold">IOC CSKH</span>
+        <span className="text-sm font-semibold">App tự phục vụ</span>
       </div>
 
       <DropdownMenu>

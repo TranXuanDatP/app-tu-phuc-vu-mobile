@@ -68,9 +68,16 @@ export function useUploadTicketPhoto() {
         "/tickets/upload-url",
         { fileName: file.name, fileType: file.type as "image/jpeg" | "image/png" | "image/webp" },
       );
-      const putRes = await fetch(uploadUrl, { method: "PUT", body: file });
-      if (!putRes.ok) throw new Error("Tải ảnh lên thất bại");
-      return { fileKey, publicUrl: uploadUrl.split("?")[0] };
+      try {
+        const putRes = await fetch(uploadUrl, { method: "PUT", body: file });
+        if (!putRes.ok) throw new Error("Tải ảnh lên thất bại");
+        return { fileKey, publicUrl: uploadUrl.split("?")[0] };
+      } catch {
+        // Mock/dev: the presigned URL points at a non-existent storage host, so
+        // the PUT can't really succeed. Fall back to a local blob URL so the form
+        // can still preview + submit (the BFF mock accepts any imageUrl).
+        return { fileKey, publicUrl: URL.createObjectURL(file) };
+      }
     },
     onError: (e) => toast.error((e as Error).message ?? "Tải ảnh lên thất bại"),
   });

@@ -1,10 +1,9 @@
-import { AppSidebar } from "@/components/layout/app-sidebar";
-import { AppHeader } from "@/components/layout/app-header";
+import { BottomNav } from "@/components/layout/bottom-nav";
 
 /**
- * Authenticated portal shell. The edge middleware already gates these routes
- * (redirects to /login without a session cookie); this layout renders the
- * chrome (sidebar + header) around every module page.
+ * Mobile-first app shell — a centered phone-width column with a fixed bottom
+ * navigation (5 tabs). Replaces the old desktop sidebar+header chrome.
+ * Pages render their own sticky appbar (see Home/Bills/etc).
  */
 export default function AppLayout({
   children,
@@ -12,12 +11,9 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-muted/20">
-      <AppSidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <AppHeader />
-        <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
-      </div>
+    <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col bg-background shadow-xl">
+      <main className="flex-1 pb-28">{children}</main>
+      <BottomNav />
     </div>
   );
 }

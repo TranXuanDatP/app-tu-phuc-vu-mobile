@@ -630,3 +630,76 @@ export interface SessionEventsResponse {
   page: number;
   pageSize: number;
 }
+
+// ── Reporting (Phase 2, S23) ────────────────────────────────────────────────
+export interface ConsumptionReport {
+  customerId: string;
+  period: string; // YYYY-MM
+  totalM3: number;
+  amount: number;
+  comparisonPercent: number;
+}
+export type ComparisonType =
+  | "previous_period"
+  | "same_period_last_year"
+  | "area_average";
+export interface ComparisonReport {
+  customerId: string;
+  comparisonType: ComparisonType;
+  current: number;
+  previous: number;
+  changePercent: number;
+}
+
+// ── Water Cutoff (Phase 2, S17) ─────────────────────────────────────────────
+export interface CutoffStatus {
+  customerId: string;
+  hasActiveCutoff: boolean;
+  reason: string | null;
+  scheduledAt: string | null;
+  resolvedAt: string | null;
+}
+export interface CutoffSchedule {
+  areaId: string;
+  schedules: { from: string; to: string; reason: string }[];
+}
+
+// ── Smart Meter (Phase 2, S18) ──────────────────────────────────────────────
+export interface RealtimeConsumption {
+  customerId: string;
+  meterId: string;
+  currentFlowM3h: number;
+  todayM3: number;
+  lastReadingAt: string;
+}
+export interface SmartMeterStatus {
+  meterId: string;
+  online: boolean;
+  batteryLevel: number;
+  lastSeenAt: string;
+}
+
+// ── Segmentation (Phase 2, S3) ──────────────────────────────────────────────
+export type ValueSegment = "VIP" | "large" | "medium" | "small";
+export type CustomerType =
+  | "sinh_hoat"
+  | "san_xuat"
+  | "kcn"
+  | "hanh_chinh"
+  | "dich_vu";
+export interface Segment {
+  customerType: CustomerType;
+  valueSegment: ValueSegment;
+  area: string;
+  behaviorTags: string[];
+}
+export interface SegmentsResponse {
+  customerId: string;
+  segment: Segment;
+}
+export interface Eligibility {
+  customerId: string;
+  campaignId: string;
+  eligible: boolean;
+  reasons: string[];
+}

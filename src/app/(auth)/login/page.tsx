@@ -1,16 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Droplets } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Droplet, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { usePhoneLogin } from "@/features/auth/hooks";
 import { useSession } from "@/lib/auth-client";
 
-// Vietnamese phone: 0 or +84 prefix + 9–10 digits.
-const PHONE_RE = /^(0|\+84)\d{9,10}$/;
+// Local VN mobile digits WITHOUT the leading 0 — the +84 prefix is fixed in the UI.
+const LOCAL_PHONE_RE = /^\d{9,10}$/;
 
 export default function LoginPage() {
   const { data: session, isPending } = useSession();
@@ -20,12 +17,10 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(0);
 
-  // Already logged in → go to dashboard.
   useEffect(() => {
     if (session) window.location.replace("/dashboard");
   }, [session]);
 
-  // Resend-OTP countdown (OTP expires in 300s per backend config).
   useEffect(() => {
     if (login.step !== "otp") return;
     setSecondsLeft(300);
@@ -45,111 +40,123 @@ export default function LoginPage() {
 
   function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
-    if (!PHONE_RE.test(phone.trim())) {
-      setPhoneError("Số điện thoại không hợp lệ (vd: 0987654321)");
+    const local = phone.trim().replace(/\D/g, "").replace(/^0+/, "");
+    if (!LOCAL_PHONE_RE.test(local)) {
+      setPhoneError("Nhập 9–10 chữ số, bỏ số 0 ở đầu (vd: 912 345 678)");
       return;
     }
     setPhoneError(null);
-    login.sendOtp(phone.trim());
+    login.sendOtp(`+84${local}`);
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Droplets className="h-6 w-6" />
-          </div>
-          <CardTitle className="text-2xl">Cổng Khách hàng IOC</CardTitle>
-          <CardDescription>
-            {login.step === "phone"
-              ? "Đăng nhập bằng số điện thoại để tiếp tục"
-              : `Nhập mã OTP gửi đến ${login.phoneNumber}`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {login.step === "phone" ? (
-            <form onSubmit={handleSendOtp} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Số điện thoại</Label>
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-background">
+      {/* Aqua hero */}
+      <div className="relative overflow-hidden bg-gradient-to-b from-deep to-aqua px-6 pb-9 pt-16 text-center text-white">
+        <div className="mx-auto mb-4 flex h-[70px] w-[70px] items-center justify-center rounded-[22px] bg-white/20">
+          <Droplet className="h-8 w-8" />
+        </div>
+        <h1 className="text-2xl font-extrabold">My QUAWACO</h1>
+        <p className="mt-1.5 text-[13.5px] opacity-90">
+          Nước sạch trong tầm tay — mọi lúc, mọi nơi
+        </p>
+      </div>
+
+      <div className="flex-1 px-5 py-6">
+        {login.step === "phone" ? (
+          <form onSubmit={handleSendOtp} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[12.5px] font-semibold text-muted-foreground">
+                Số điện thoại
+              </label>
+              <div className="flex items-center gap-2.5 rounded-[13px] border-[1.5px] border-line bg-card px-3.5 py-3 focus-within:border-aqua">
+                <span className="font-bold text-muted-foreground">+84</span>
                 <Input
-                  id="phoneNumber"
                   name="phoneNumber"
                   type="tel"
                   inputMode="numeric"
                   autoComplete="tel"
-                  placeholder="0987654321"
+                  placeholder="912 345 678"
                   value={phone}
                   onChange={(e) => {
-                    setPhone(e.target.value);
+                    setPhone(e.target.value.replace(/\D/g, "").replace(/^0+/, ""));
                     if (phoneError) setPhoneError(null);
                   }}
+                  className="h-auto border-0 bg-transparent p-0 text-base shadow-none focus-visible:ring-0"
                 />
-                {phoneError && (
-                  <p className="text-sm text-destructive">{phoneError}</p>
-                )}
               </div>
-              <Button type="submit" className="w-full" disabled={login.isSending}>
-                {login.isSending ? "Đang gửi OTP..." : "Gửi mã OTP"}
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                Mã OTP sẽ được ghi trong log server ở môi trường phát triển.
-              </p>
-            </form>
-          ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (otp.length === 6) login.verifyOtp(otp);
-              }}
-              className="space-y-4"
+              {phoneError && <p className="text-sm text-destructive">{phoneError}</p>}
+            </div>
+            <button
+              type="submit"
+              disabled={login.isSending}
+              className="block w-full rounded-[14px] bg-deep py-[15px] text-[15.5px] font-extrabold text-white active:scale-[0.99] disabled:opacity-60"
             >
-              <div className="space-y-2">
-                <Label htmlFor="otp">Mã OTP (6 chữ số)</Label>
-                <Input
-                  id="otp"
-                  name="otp"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  placeholder="••••••"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="text-center text-2xl tracking-[0.5em]"
-                />
-                {otp.length > 0 && otp.length < 6 && (
-                  <p className="text-sm text-muted-foreground">
-                    Còn thiếu {6 - otp.length} chữ số.
-                  </p>
-                )}
-              </div>
-              <Button type="submit" className="w-full" disabled={login.isVerifying || otp.length !== 6}>
-                {login.isVerifying ? "Đang xác thực..." : "Xác thực"}
-              </Button>
-              <div className="flex items-center justify-between text-sm">
-                <Button
-                  type="button"
-                  variant="link"
-                  className="h-auto p-0"
-                  onClick={() => login.reset()}
-                >
-                  Đổi số điện thoại
-                </Button>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="h-auto p-0"
-                  disabled={secondsLeft > 0}
-                  onClick={() => login.sendOtp(login.phoneNumber)}
-                >
-                  {secondsLeft > 0 ? `Gửi lại sau ${secondsLeft}s` : "Gửi lại OTP"}
-                </Button>
-              </div>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+              {login.isSending ? "Đang gửi..." : "Gửi mã OTP"}
+            </button>
+            <p className="text-center text-xs leading-relaxed text-muted-foreground">
+              Bằng việc tiếp tục, bạn đồng ý với Điều khoản & Chính sách bảo mật.
+            </p>
+          </form>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (otp.length === 6) login.verifyOtp(otp);
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-1.5">
+              <label className="text-[12.5px] font-semibold text-muted-foreground">
+                Mã OTP gửi đến {login.phoneNumber}
+              </label>
+              <Input
+                name="otp"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="• • • • • •"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="h-14 rounded-[13px] border-[1.5px] border-line text-center text-2xl font-extrabold tracking-[0.5em] text-deep focus-visible:border-aqua"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={login.isVerifying || otp.length !== 6}
+              className="block w-full rounded-[14px] bg-deep py-[15px] text-[15.5px] font-extrabold text-white active:scale-[0.99] disabled:opacity-60"
+            >
+              {login.isVerifying ? "Đang xác thực..." : "Xác thực"}
+            </button>
+            <div className="flex items-center justify-between text-sm">
+              <button
+                type="button"
+                className="font-semibold text-aqua"
+                onClick={() => login.reset()}
+              >
+                Đổi số
+              </button>
+              <button
+                type="button"
+                disabled={secondsLeft > 0}
+                onClick={() => login.sendOtp(login.phoneNumber)}
+                className="font-semibold text-aqua disabled:opacity-50"
+              >
+                {secondsLeft > 0 ? `Gửi lại sau ${secondsLeft}s` : "Gửi lại OTP"}
+              </button>
+            </div>
+            <p className="text-center text-xs text-muted-foreground">
+              Mã có hiệu lực 5 phút. Môi trường dev: OTP in trong log BFF.
+            </p>
+          </form>
+        )}
+
+        <div className="mt-7 flex items-center justify-center gap-2 text-[11.5px] text-muted-foreground">
+          <ShieldCheck className="h-4 w-4" />
+          Xác thực bảo mật bởi better-auth
+        </div>
+      </div>
     </main>
   );
 }
