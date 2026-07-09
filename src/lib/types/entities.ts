@@ -703,3 +703,86 @@ export interface Eligibility {
   eligible: boolean;
   reasons: string[];
 }
+
+// ── Water Quality (Phase 3, S35) ────────────────────────────────────────────
+export type QualityStatus = "safe" | "advisory" | "unsafe";
+export interface QualityAtLocation {
+  location: string;
+  testedAt: string;
+  turbidity: number;
+  chlorine: number;
+  ph: number;
+  status: QualityStatus;
+}
+export interface QualityAlert {
+  alertId: string;
+  area: string;
+  parameter: string;
+  value: number;
+  limit: number;
+  issuedAt: string;
+  status: "active" | "resolved";
+}
+export interface QualityAlertsResponse {
+  alerts: QualityAlert[];
+}
+
+// ── Meter Anomaly (Phase 3, S27) ────────────────────────────────────────────
+export type AnomalyType = "continuous_flow" | "backflow" | "no_flow" | "tamper";
+export type AnomalySeverity = "low" | "medium" | "high";
+export interface AnomalyAlert {
+  alertId: string;
+  meterId: string;
+  type: AnomalyType;
+  severity: AnomalySeverity;
+  detectedAt: string;
+}
+export interface AnomalyAlertsResponse {
+  customerId: string;
+  alerts: AnomalyAlert[];
+}
+
+// ── Leakage Alert (Phase 3, S25) ────────────────────────────────────────────
+export type LeakageStatus = "detected" | "investigating" | "confirmed" | "resolved";
+export interface LeakageAlert {
+  alertId: string;
+  customerId: string;
+  suspectedLocation: string;
+  confidence: number;
+  status: LeakageStatus;
+  detectedAt: string;
+}
+export interface LeakageAlertsResponse {
+  customerId: string;
+  alerts: LeakageAlert[];
+}
+export interface ScheduleInspectionResult {
+  alertId: string;
+  inspectionId: string;
+  teamId: string;
+  scheduledAt: string;
+}
+
+// ── Campaign (Phase 3, S33) ─────────────────────────────────────────────────
+export interface CampaignSummary {
+  campaignId: string;
+  title: string;
+  audience: string;
+  startsAt: string;
+  endsAt: string;
+}
+export interface ActiveCampaignsResponse {
+  customerId: string;
+  campaigns: CampaignSummary[];
+}
+export interface MarketingMessage {
+  id: string;
+  title: string;
+  body: string;
+  sentAt: string;
+  read: boolean;
+}
+export interface MarketingMessagesResponse {
+  customerId: string;
+  messages: MarketingMessage[];
+}

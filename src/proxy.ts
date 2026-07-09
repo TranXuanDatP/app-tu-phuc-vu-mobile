@@ -27,6 +27,10 @@ const protectedPaths = [
   "/segments",
   "/contact",
   "/chat",
+  "/water-quality",
+  "/meter-anomalies",
+  "/leakage-alerts",
+  "/campaigns",
 ];
 
 export async function proxy(request: NextRequest) {

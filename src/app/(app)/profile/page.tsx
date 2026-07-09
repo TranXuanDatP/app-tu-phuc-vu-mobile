@@ -14,6 +14,9 @@ import {
   Phone,
   PhoneCall,
   ScanLine,
+  AlertTriangle,
+  Gauge,
+  Gift,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -123,6 +126,31 @@ export default function ProfilePage() {
               />
             </>
           ) : null}
+        </div>
+      </Section>
+
+      <Section title="Tiện ích">
+        <div className="overflow-hidden rounded-[18px] border border-line bg-card shadow-[0_6px_22px_rgba(10,42,56,.10)]">
+          {(
+            [
+              { icon: Droplet, label: "Chất lượng nước", href: "/water-quality" },
+              { icon: Gauge, label: "Cảnh báo đồng hồ", href: "/meter-anomalies" },
+              { icon: AlertTriangle, label: "Cảnh báo rò rỉ", href: "/leakage-alerts" },
+              { icon: Gift, label: "Ưu đãi & thông điệp", href: "/campaigns" },
+            ] as const
+          ).map((u, i, arr) => (
+            <Link
+              key={u.href}
+              href={u.href}
+              className={`flex items-center gap-3 px-4 py-3.5 ${i < arr.length - 1 ? "border-b border-line" : ""}`}
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-aqua-soft text-deep">
+                <u.icon className="h-4 w-4" />
+              </span>
+              <b className="flex-1 text-[14px] font-semibold">{u.label}</b>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          ))}
         </div>
       </Section>
 
