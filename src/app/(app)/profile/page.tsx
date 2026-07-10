@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   Gauge,
   Gift,
+  FileText,
+  Plus,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -137,6 +139,9 @@ export default function ProfilePage() {
               { icon: Gauge, label: "Cảnh báo đồng hồ", href: "/meter-anomalies" },
               { icon: AlertTriangle, label: "Cảnh báo rò rỉ", href: "/leakage-alerts" },
               { icon: Gift, label: "Ưu đãi & thông điệp", href: "/campaigns" },
+              { icon: FileText, label: "Hợp đồng điện tử", href: "/econtracts" },
+              { icon: Plus, label: "Đăng ký cấp nước", href: "/onboarding" },
+              { icon: MapPin, label: "Phạm vi cấp nước", href: "/gis" },
             ] as const
           ).map((u, i, arr) => (
             <Link

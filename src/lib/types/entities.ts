@@ -786,3 +786,55 @@ export interface MarketingMessagesResponse {
   customerId: string;
   messages: MarketingMessage[];
 }
+
+// ── e-Contract (Phase 2, S15) ────────────────────────────────────────────────
+export type EcontractStatus = "draft" | "pending_signature" | "signed" | "expired";
+export interface EcontractResponse {
+  dossierId: string;
+  customerId: string;
+  status: EcontractStatus;
+  downloadUrl: string | null;
+  signedAt: string | null;
+}
+export interface SignContractResult {
+  dossierId: string;
+  status: "signed" | "failed";
+  signedAt: string;
+}
+
+// ── Onboarding (Phase 2, S5) ─────────────────────────────────────────────────
+export type OnboardingStage = "documents" | "site_survey" | "contract" | "activation";
+export type OnboardingStatus = "pending" | "in_progress" | "completed" | "rejected";
+export interface OnboardingStatusResponse {
+  requestId: string;
+  customerId: string;
+  stage: OnboardingStage;
+  status: OnboardingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface CreateOnboardingResult {
+  requestId: string;
+  status: OnboardingStatus;
+}
+
+// ── GIS (Phase 2, S30) ───────────────────────────────────────────────────────
+export interface CoverageResult {
+  address: string;
+  covered: boolean;
+  dma: string | null;
+  estimatedConnectionDays: number | null;
+}
+export interface NearbyIncident {
+  id: string;
+  type: string;
+  address: string;
+  status: "reported" | "in_progress" | "resolved";
+  distanceMeters: number;
+  updatedAt: string;
+}
+export interface NearbyIncidentsResponse {
+  latitude: number;
+  longitude: number;
+  incidents: NearbyIncident[];
+}
