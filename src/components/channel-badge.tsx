@@ -1,6 +1,23 @@
-import { MessageCircle, Globe, Phone, Store, type LucideIcon } from "lucide-react";
+import {
+  MessageCircle,
+  Globe,
+  Phone,
+  Store,
+  Smartphone,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SessionChannel } from "@/lib/types/entities";
+
+// Fallback for channels present at runtime but not in `channelMeta` (e.g. "app",
+// the single-channel default after the App-only reorientation). Prevents the
+// `Cannot read properties of undefined (reading 'icon')` crash.
+const FALLBACK: { label: string; icon: LucideIcon; chip: string; dot: string } = {
+  label: "App",
+  icon: Smartphone,
+  chip: "bg-aqua-soft text-deep ring-1 ring-line",
+  dot: "bg-aqua",
+};
 
 /**
  * Per-channel visual identity — makes the OMNICHANNEL nature visible at a glance
@@ -43,7 +60,7 @@ export function ChannelBadge({
   channel: SessionChannel;
   className?: string;
 }) {
-  const meta = channelMeta[channel];
+  const meta = channelMeta[channel] ?? FALLBACK;
   const Icon = meta.icon;
   return (
     <span

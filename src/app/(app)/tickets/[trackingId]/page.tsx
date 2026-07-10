@@ -1,23 +1,14 @@
 "use client";
 
 import { use, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Star } from "lucide-react";
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Skeleton,
-  Textarea,
-} from "@/components/ui";
+import Link from "next/link";
+import { Check, Clock, MessageSquare, PhoneCall, Star } from "lucide-react";
+import { AppBar } from "@/components/layout/app-bar";
+import { Badge, Button, Skeleton, Textarea } from "@/components/ui";
 import { ErrorState } from "@/components/state";
 import { useSubmitFeedback, useTicketStatus } from "@/features/tickets/queries";
 import { ticketStatusLabel, ticketStatusVariant } from "@/features/tickets/labels";
-import { formatDate } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 export default function TicketTrackingPage({
   params,
@@ -25,129 +16,153 @@ export default function TicketTrackingPage({
   params: Promise<{ trackingId: string }>;
 }) {
   const { trackingId } = use(params);
-  const router = useRouter();
   const ticket = useTicketStatus(trackingId);
   const submitFeedback = useSubmitFeedback();
   const [score, setScore] = useState(0);
-  const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  const t = ticket.data;
+  const lastIdx = t ? t.timeline.length - 1 : -1;
+  const isDone = t?.status === "resolved" || t?.status === "closed";
+  const etaMin =
+    t?.eta ? Math.max(0, Math.round((new Date(t.eta).getTime() - Date.now()) / 60000)) : null;
+
   return (
-    <div className="space-y-6">
-      <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-1">
-        <ArrowLeft className="h-4 w-4" /> Quay lại
-      </Button>
+    <div className="pb-4">
+      <AppBar title="Theo dõi yêu cầu" sub={t ? `#${t.trackingId}` : ""} back />
 
       {ticket.isLoading ? (
-        <Skeleton className="h-96 w-full" />
+        <div className="p-4">
+          <Skeleton className="h-64 w-full" />
+        </div>
       ) : ticket.isError ? (
-        <Card><CardContent><ErrorState onRetry={() => ticket.refetch()} /></CardContent></Card>
-      ) : !ticket.data ? null : (
-        <>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {ticket.data.trackingId}
-              </h1>
-              <Badge variant={ticketStatusVariant[ticket.data.status]}>
-                {ticketStatusLabel[ticket.data.status]}
-              </Badge>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Tạo ngày {formatDate(ticket.data.createdAt)} · Cập nhật {formatDate(ticket.data.updatedAt)}
-            </p>
-            {ticket.data.assignedTeam && (
-              <p className="text-sm text-muted-foreground">Đội xử lý: {ticket.data.assignedTeam}</p>
-            )}
-            {ticket.data.eta && (
-              <p className="text-sm text-muted-foreground">Dự kiến: {formatDate(ticket.data.eta)}</p>
-            )}
-          </div>
+        <div className="p-4">
+          <ErrorState onRetry={() => ticket.refetch()} />
+        </div>
+      ) : !t ? null : (
+        <div className="space-y-4 p-4">
+          <Badge variant={ticketStatusVariant[t.status]}>{ticketStatusLabel[t.status]}</Badge>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Tiến trình xử lý</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ol className="relative space-y-5 border-l pl-6">
-                {ticket.data.timeline.map((e, i) => (
-                  <li key={i} className="relative">
+          {/* ETA card (Grab-style) */}
+          {!isDone && (etaMin !== null || t.assignedTeam) ? (
+            <div className="flex items-center gap-3.5 rounded-[18px] border border-[#CBE9DC] bg-mint-soft p-4">
+              <span className="text-[30px] font-extrabold tabular-nums text-[#0f6b4c]">
+                {etaMin !== null ? `${etaMin}'` : "—"}
+              </span>
+              <div>
+                <b className="text-[14px]">
+                  {etaMin !== null ? "Đội kỹ thuật đang tới" : "Đang xử lý"}
+                </b>
+                <p className="text-[12.5px] text-muted-foreground">
+                  {t.assignedTeam ?? ""}
+                  {t.eta ? ` · dự kiến ${formatDate(t.eta)}` : ""}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Timeline */}
+          <h2 className="px-1 text-sm font-bold">Tiến trình xử lý</h2>
+          <div className="rounded-[18px] border border-line bg-card p-4 shadow-[0_6px_22px_rgba(10,42,56,.10)]">
+            <div className="pl-2 pt-1.5">
+              {t.timeline.map((e, i) => {
+                const done = i < lastIdx;
+                const now = i === lastIdx && !isDone;
+                return (
+                  <div key={i} className="relative flex gap-3.5 pb-5 last:pb-0">
+                    {i < lastIdx ? (
+                      <span className="absolute bottom-0 left-[11px] top-6 w-0.5 bg-line" />
+                    ) : null}
                     <span
                       className={cn(
-                        "absolute -left-[27px] top-1 h-3.5 w-3.5 rounded-full border-2 border-background",
-                        i === ticket.data!.timeline.length - 1 ? "bg-primary" : "bg-muted-foreground",
+                        "relative z-10 flex h-6 w-6 items-center justify-center rounded-full border-2",
+                        done
+                          ? "border-mint bg-mint text-white"
+                          : now
+                            ? "border-aqua bg-aqua text-white shadow-[0_0_0_4px_var(--aqua-soft)]"
+                            : "border-line bg-foam text-muted-foreground",
                       )}
-                    />
-                    <div className="flex items-center gap-2">
-                      <Badge variant={ticketStatusVariant[e.status]}>
-                        {ticketStatusLabel[e.status]}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">{formatDate(e.timestamp)}</span>
-                    </div>
-                    {e.description && <p className="mt-1 text-sm">{e.description}</p>}
-                    {e.actor && <p className="text-xs text-muted-foreground">Bởi: {e.actor}</p>}
-                  </li>
-                ))}
-              </ol>
-            </CardContent>
-          </Card>
-
-          {ticket.data.status === "resolved" || ticket.data.status === "closed" ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Đánh giá chất lượng xử lý</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {submitted ? (
-                  <p className="text-sm text-muted-foreground">Bạn đã đánh giá phản ánh này. Cảm ơn!</p>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <button
-                          key={n}
-                          type="button"
-                          onClick={() => setScore(n)}
-                          onMouseEnter={() => setHover(n)}
-                          onMouseLeave={() => setHover(0)}
-                          className="p-0.5"
-                        >
-                          <Star
-                            className={cn(
-                              "h-7 w-7 transition-colors",
-                              (hover || score) >= n
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-muted-foreground",
-                            )}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                    <Textarea
-                      rows={2}
-                      maxLength={1000}
-                      placeholder="Để lại nhận xét (không bắt buộc)"
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                    />
-                    <Button
-                      disabled={score === 0 || submitFeedback.isPending}
-                      onClick={() =>
-                        submitFeedback.mutate(
-                          { trackingId, score, ...(comment ? { comment } : {}) },
-                          { onSuccess: () => setSubmitted(true) },
-                        )
-                      }
                     >
-                      {submitFeedback.isPending ? "Đang gửi..." : "Gửi đánh giá"}
-                    </Button>
+                      {done ? <Check className="h-3.5 w-3.5" /> : now ? <Clock className="h-3 w-3" /> : null}
+                    </span>
+                    <div className="pt-0.5">
+                      <b className={cn("text-[14px]", now && "text-deep")}>
+                        {ticketStatusLabel[e.status]}
+                      </b>
+                      <p className="text-[12px] text-muted-foreground">
+                        {formatDate(e.timestamp)}
+                        {e.actor ? ` · ${e.actor}` : ""}
+                      </p>
+                      {e.description ? <p className="mt-0.5 text-[13px]">{e.description}</p> : null}
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2.5">
+            <Link
+              href="/contact"
+              className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-line font-extrabold text-deep active:scale-[0.99]"
+            >
+              <PhoneCall className="h-4 w-4" /> Gọi tổng đài
+            </Link>
+            <Link
+              href="/chat"
+              className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-line font-extrabold text-deep active:scale-[0.99]"
+            >
+              <MessageSquare className="h-4 w-4" /> Nhắn cho đội
+            </Link>
+          </div>
+
+          {/* Feedback */}
+          {isDone ? (
+            <div className="rounded-[18px] border border-line bg-card p-4 shadow-[0_6px_22px_rgba(10,42,56,.10)]">
+              <h2 className="mb-3 px-1 text-sm font-bold">Đánh giá chất lượng xử lý</h2>
+              {submitted ? (
+                <p className="text-sm text-muted-foreground">Cảm ơn bạn đã đánh giá!</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button key={n} type="button" onClick={() => setScore(n)} className="p-0.5">
+                        <Star
+                          className={cn(
+                            "h-7 w-7",
+                            score >= n ? "fill-amber-400 text-amber-400" : "text-muted-foreground",
+                          )}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <Textarea
+                    rows={2}
+                    maxLength={1000}
+                    placeholder="Nhận xét (không bắt buộc)"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    disabled={score === 0 || submitFeedback.isPending}
+                    onClick={() =>
+                      submitFeedback.mutate(
+                        { trackingId, score, ...(comment ? { comment } : {}) },
+                        { onSuccess: () => setSubmitted(true) },
+                      )
+                    }
+                    className="h-[48px] w-full rounded-[14px] bg-deep font-extrabold"
+                  >
+                    {submitFeedback.isPending ? "Đang gửi..." : "Gửi đánh giá"}
+                  </Button>
+                </div>
+              )}
+            </div>
           ) : null}
-        </>
+        </div>
       )}
     </div>
   );

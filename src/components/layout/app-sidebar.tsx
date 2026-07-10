@@ -16,8 +16,8 @@ export function AppSidebar() {
           <Droplets className="h-5 w-5" />
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-semibold">IOC CSKH</p>
-          <p className="text-xs text-muted-foreground">Cổng Khách hàng</p>
+          <p className="text-sm font-semibold">App tự phục vụ</p>
+          <p className="text-xs text-muted-foreground">Công ty IOC</p>
         </div>
       </div>
 

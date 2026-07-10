@@ -15,6 +15,8 @@ export {
   CardDescription,
   CardContent,
 } from "./card";
+export { GlassCard } from "./glass-card";
+export { Toggle } from "./toggle";
 export {
   Dialog,
   DialogTrigger,

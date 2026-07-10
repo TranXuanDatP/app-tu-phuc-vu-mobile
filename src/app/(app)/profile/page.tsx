@@ -5,12 +5,30 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  Badge,
+  Bell,
+  ChevronRight,
+  Droplet,
+  LogOut,
+  Mail,
+  MapPin,
+  Phone,
+  PhoneCall,
+  ScanLine,
+  AlertTriangle,
+  Gauge,
+  Gift,
+  FileText,
+  Plus,
+  ClipboardList,
+  Truck,
+  Bot,
+  type LucideIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { AppBar } from "@/components/layout/app-bar";
+import { toast } from "sonner";
+import {
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -21,94 +39,257 @@ import {
   Input,
   Label,
   Skeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Toggle,
 } from "@/components/ui";
-import { EmptyState, ErrorState } from "@/components/state";
-import {
-  useCustomerProfile,
-  useCustomerTimeline,
-  useRelatedAccounts,
-  useUpdateProfile,
-} from "@/features/customers/queries";
+import { ErrorState } from "@/components/state";
+import { useCustomerProfile, useUpdateProfile } from "@/features/customers/queries";
 import { classificationLabel } from "@/features/customers/labels";
-import { ChannelBadge, channelMeta } from "@/components/channel-badge";
-import type { SessionChannel } from "@/lib/types/entities";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { signOut } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
+  const { data, isLoading, isError, refetch } = useCustomerProfile();
+  const [open, setOpen] = useState(false);
+
+  async function handleLogout() {
+    await signOut();
+    window.location.replace("/login");
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Hồ sơ khách hàng</h1>
-        <p className="text-sm text-muted-foreground">Thông tin tài khoản và lịch sử tương tác</p>
+    <div className="pb-4">
+      <AppBar title="Tài khoản" />
+
+      {/* Avatar header */}
+      <div className="flex items-center gap-3.5 border-b border-line bg-card px-4 py-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-gradient-to-br from-deep to-aqua text-[22px] font-extrabold text-white">
+          {(data?.fullName ?? "?").charAt(0).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[17px] font-extrabold">
+            {data?.fullName ?? (isLoading ? "…" : "Khách hàng")}
+          </div>
+          <div className="text-[12.5px] text-muted-foreground">
+            {data?.contactInfo?.phone ?? "—"} · {data?.customerId ?? ""}
+          </div>
+          <span className="mt-1 inline-block rounded-full bg-mint-soft px-2.5 py-0.5 text-[11px] font-bold text-[#0f6b4c]">
+            Đã liên kết mã KH
+          </span>
+        </div>
       </div>
-      <Tabs defaultValue="profile">
-        <TabsList>
-          <TabsTrigger value="profile">Hồ sơ</TabsTrigger>
-          <TabsTrigger value="timeline">Lịch sử tương tác</TabsTrigger>
-          <TabsTrigger value="related">Tài khoản liên quan</TabsTrigger>
-        </TabsList>
-        <TabsContent value="profile" className="mt-4"><ProfileTab /></TabsContent>
-        <TabsContent value="timeline" className="mt-4"><TimelineTab /></TabsContent>
-        <TabsContent value="related" className="mt-4"><RelatedTab /></TabsContent>
-      </Tabs>
+
+      {isError ? (
+        <div className="p-4">
+          <ErrorState onRetry={() => refetch()} />
+        </div>
+      ) : null}
+
+      <Section title="Thông tin tài khoản">
+        <div className="overflow-hidden rounded-[18px] border border-line bg-card shadow-[0_6px_22px_rgba(10,42,56,.10)]">
+          {isLoading ? (
+            <Skeleton className="h-28 w-full" />
+          ) : data ? (
+            <>
+              <Row label="Mã khách hàng" value={data.customerId} />
+              <Row
+                label="Phân loại"
+                value={classificationLabel[data.classification] ?? data.classification}
+              />
+              <Row label="Địa chỉ" value={data.address.fullAddress} last />
+            </>
+          ) : null}
+        </div>
+      </Section>
+
+      <Section
+        title="Thông tin liên hệ"
+        action={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <button type="button" className="text-[12.5px] font-semibold text-aqua">
+                Chỉnh sửa
+              </button>
+            </DialogTrigger>
+            {data ? (
+              <EditContactDialog defaults={data.contactInfo} onDone={() => setOpen(false)} />
+            ) : null}
+          </Dialog>
+        }
+      >
+        <div className="overflow-hidden rounded-[18px] border border-line bg-card shadow-[0_6px_22px_rgba(10,42,56,.10)]">
+          {isLoading ? (
+            <Skeleton className="h-28 w-full" />
+          ) : data ? (
+            <>
+              <IconRow icon={Phone} label="Số điện thoại" value={data.contactInfo.phone ?? "—"} />
+              <IconRow icon={Mail} label="Email" value={data.contactInfo.email ?? "—"} />
+              <IconRow
+                icon={MapPin}
+                label="Địa chỉ liên hệ"
+                value={data.contactInfo.contactAddress ?? "—"}
+                last
+              />
+            </>
+          ) : null}
+        </div>
+      </Section>
+
+      <Section title="Tiện ích">
+        <div className="overflow-hidden rounded-[18px] border border-line bg-card shadow-[0_6px_22px_rgba(10,42,56,.10)]">
+          {(
+            [
+              { icon: Droplet, label: "Chất lượng nước", href: "/water-quality" },
+              { icon: Gauge, label: "Cảnh báo đồng hồ", href: "/meter-anomalies" },
+              { icon: AlertTriangle, label: "Cảnh báo rò rỉ", href: "/leakage-alerts" },
+              { icon: Gift, label: "Ưu đãi & thông điệp", href: "/campaigns" },
+              { icon: FileText, label: "Hợp đồng điện tử", href: "/econtracts" },
+              { icon: Plus, label: "Đăng ký cấp nước", href: "/onboarding" },
+              { icon: MapPin, label: "Phạm vi cấp nước", href: "/gis" },
+              { icon: Phone, label: "Tổng đài", href: "/call-center" },
+              { icon: ClipboardList, label: "Khảo sát hiện trường", href: "/site-surveys" },
+              { icon: Truck, label: "Theo dõi đội", href: "/field-team" },
+              { icon: Bot, label: "Trợ lý AI", href: "/chatbot" },
+            ] as const
+          ).map((u, i, arr) => (
+            <Link
+              key={u.href}
+              href={u.href}
+              className={`flex items-center gap-3 px-4 py-3.5 ${i < arr.length - 1 ? "border-b border-line" : ""}`}
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-aqua-soft text-deep">
+                <u.icon className="h-4 w-4" />
+              </span>
+              <b className="flex-1 text-[14px] font-semibold">{u.label}</b>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Thông báo & hóa đơn">
+        <div className="overflow-hidden rounded-[18px] border border-line bg-card shadow-[0_6px_22px_rgba(10,42,56,.10)]">
+          <div className="flex items-center gap-3 border-b border-line px-4 py-3.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-foam text-deep">
+              <Bell className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <b className="text-[14px] font-semibold">Cảnh báo sự cố khu vực</b>
+              <p className="text-[12px] text-muted-foreground">Mất nước, bảo trì gần bạn</p>
+            </div>
+            <Toggle defaultOn />
+          </div>
+          <div className="flex items-center gap-3 px-4 py-3.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-foam text-deep">
+              <Droplet className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <b className="text-[14px] font-semibold">Cảnh báo nghi rò rỉ</b>
+              <p className="text-[12px] text-muted-foreground">Khi tiêu thụ tăng bất thường</p>
+            </div>
+            <Toggle defaultOn />
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Hỗ trợ tiếp cận">
+        <div className="overflow-hidden rounded-[18px] border border-line bg-card shadow-[0_6px_22px_rgba(10,42,56,.10)]">
+          <div className="flex items-center gap-3 border-b border-line px-4 py-3.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-foam text-deep">
+              <ScanLine className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <b className="text-[14px] font-semibold">Chế độ người cao tuổi</b>
+              <p className="text-[12px] text-muted-foreground">Chữ lớn hơn, thao tác đơn giản</p>
+            </div>
+            <Toggle
+              onChange={(on) => toast(on ? "Đã bật chế độ người cao tuổi" : "Đã tắt")}
+            />
+          </div>
+          <Link href="/contact" className="flex items-center gap-3 px-4 py-3.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-mint-soft text-[#0f6b4c]">
+              <PhoneCall className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <b className="text-[14px] font-semibold">Gọi tổng đài viên</b>
+              <p className="text-[12px] text-muted-foreground">Nói chuyện trực tiếp với nhân viên</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        </div>
+      </Section>
+
+      <div className="px-4 pt-5">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="block w-full rounded-[14px] border border-[#F3D2CB] bg-card py-[15px] text-[15.5px] font-extrabold text-coral active:scale-[0.99]"
+        >
+          <span className="inline-flex items-center gap-2">
+            <LogOut className="h-4 w-4" /> Đăng xuất
+          </span>
+        </button>
+        <p className="mt-3 text-center text-[12.5px] text-muted-foreground">
+          My QUAWACO · phiên bản 1.0 (prototype)
+        </p>
+      </div>
     </div>
   );
 }
 
-function ProfileTab() {
-  const { data, isLoading, isError, refetch } = useCustomerProfile();
-  const [open, setOpen] = useState(false);
-
-  if (isLoading) return <Skeleton className="h-96 w-full" />;
-  if (isError) return <Card><CardContent><ErrorState onRetry={() => refetch()} /></CardContent></Card>;
-  if (!data) return null;
-
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Thông tin chung</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <Row label="Mã khách hàng" value={data.customerId} />
-          <Row label="Họ tên" value={data.fullName} />
-          <Row label="Phân loại" value={classificationLabel[data.classification]} />
-          <Row label="Địa chỉ" value={data.address.fullAddress} />
-        </CardContent>
-      </Card>
+    <div className="px-4 pt-5">
+      <div className="mb-2 flex items-center justify-between px-1">
+        <h2 className="text-sm font-bold">{title}</h2>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">Thông tin liên hệ</CardTitle>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">Chỉnh sửa</Button>
-            </DialogTrigger>
-            <EditContactDialog defaults={data.contactInfo} onDone={() => setOpen(false)} />
-          </Dialog>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <Row label="Số điện thoại" value={data.contactInfo.phone ?? "—"} />
-          <Row label="Email" value={data.contactInfo.email ?? "—"} />
-          <Row label="Địa chỉ liên hệ" value={data.contactInfo.contactAddress ?? "—"} />
-          <div className="flex items-center gap-2 pt-2">
-            <span className="text-muted-foreground">Trạng thái:</span>
-            <Badge variant={data.status === "active" ? "success" : "secondary"}>
-              {data.status === "active" ? "Đang hoạt động" : "Không hoạt động"}
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+function Row({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex justify-between gap-4 px-4 py-3 text-[13.5px]",
+        !last && "border-b border-line",
+      )}
+    >
+      <span className="text-muted-foreground">{label}</span>
+      <span className="max-w-[60%] text-right font-semibold">{value}</span>
+    </div>
+  );
+}
+
+function IconRow({
+  icon: Icon,
+  label,
+  value,
+  last,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  last?: boolean;
+}) {
+  return (
+    <div className={cn("flex items-center gap-3 px-4 py-3", !last && "border-b border-line")}>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-foam text-deep">
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[12px] text-muted-foreground">{label}</p>
+        <p className="truncate text-[14px] font-semibold">{value}</p>
+      </div>
     </div>
   );
 }
@@ -128,7 +309,11 @@ function EditContactDialog({
   onDone: () => void;
 }) {
   const update = useUpdateProfile();
-  const { register, handleSubmit, formState: { errors } } = useForm<EditValues>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<EditValues>({
     resolver: zodResolver(editSchema),
     defaultValues: {
       phone: defaults.phone ?? "",
@@ -165,7 +350,9 @@ function EditContactDialog({
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" {...register("email")} />
-            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            {errors.email ? (
+              <p className="text-sm text-destructive">{errors.email.message}</p>
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="contactAddress">Địa chỉ liên hệ</Label>
@@ -173,84 +360,14 @@ function EditContactDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onDone}>Huỷ</Button>
+          <Button type="button" variant="outline" onClick={onDone}>
+            Huỷ
+          </Button>
           <Button type="submit" disabled={update.isPending}>
             {update.isPending ? "Đang lưu..." : "Lưu thay đổi"}
           </Button>
         </DialogFooter>
       </form>
     </DialogContent>
-  );
-}
-
-function TimelineTab() {
-  const { data, isLoading, isError, refetch } = useCustomerTimeline();
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
-  if (isError) return <Card><CardContent><ErrorState onRetry={() => refetch()} /></CardContent></Card>;
-  if (!data?.entries.length) return <Card><CardContent><EmptyState title="Chưa có tương tác nào" /></CardContent></Card>;
-
-  return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">Dòng thời gian tương tác</CardTitle></CardHeader>
-      <CardContent>
-        <ol className="relative space-y-5 border-l pl-6">
-          {data.entries.map((e, i) => (
-            <li key={i} className="relative">
-              <span className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full ${channelMeta[e.channel as SessionChannel]?.dot ?? "bg-primary"}`} />
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{e.eventType}</Badge>
-                {e.channel && <ChannelBadge channel={e.channel} />}
-                <span className="text-xs text-muted-foreground">{formatDateTime(e.timestamp)}</span>
-              </div>
-              <p className="mt-1 text-sm">{e.summary}</p>
-            </li>
-          ))}
-        </ol>
-      </CardContent>
-    </Card>
-  );
-}
-
-function RelatedTab() {
-  const { data, isLoading, isError, refetch } = useRelatedAccounts();
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
-  if (isError) return <Card><CardContent><ErrorState onRetry={() => refetch()} /></CardContent></Card>;
-  if (!data?.accounts.length) return <Card><CardContent><EmptyState title="Không có tài khoản liên quan" /></CardContent></Card>;
-
-  return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">Tài khoản liên quan</CardTitle></CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Mã KH</TableHead>
-              <TableHead>Tên</TableHead>
-              <TableHead>Mối quan hệ</TableHead>
-              <TableHead>Địa chỉ</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.accounts.map((a) => (
-              <TableRow key={a.customerId}>
-                <TableCell className="font-medium">{a.customerId}</TableCell>
-                <TableCell>{a.name}</TableCell>
-                <TableCell>{a.relationshipType}</TableCell>
-                <TableCell className="max-w-[220px] truncate">{a.address ?? "—"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value}</span>
-    </div>
   );
 }

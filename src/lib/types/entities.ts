@@ -630,3 +630,211 @@ export interface SessionEventsResponse {
   page: number;
   pageSize: number;
 }
+
+// ── Reporting (Phase 2, S23) ────────────────────────────────────────────────
+export interface ConsumptionReport {
+  customerId: string;
+  period: string; // YYYY-MM
+  totalM3: number;
+  amount: number;
+  comparisonPercent: number;
+}
+export type ComparisonType =
+  | "previous_period"
+  | "same_period_last_year"
+  | "area_average";
+export interface ComparisonReport {
+  customerId: string;
+  comparisonType: ComparisonType;
+  current: number;
+  previous: number;
+  changePercent: number;
+}
+
+// ── Water Cutoff (Phase 2, S17) ─────────────────────────────────────────────
+export interface CutoffStatus {
+  customerId: string;
+  hasActiveCutoff: boolean;
+  reason: string | null;
+  scheduledAt: string | null;
+  resolvedAt: string | null;
+}
+export interface CutoffSchedule {
+  areaId: string;
+  schedules: { from: string; to: string; reason: string }[];
+}
+
+// ── Smart Meter (Phase 2, S18) ──────────────────────────────────────────────
+export interface RealtimeConsumption {
+  customerId: string;
+  meterId: string;
+  currentFlowM3h: number;
+  todayM3: number;
+  lastReadingAt: string;
+}
+export interface SmartMeterStatus {
+  meterId: string;
+  online: boolean;
+  batteryLevel: number;
+  lastSeenAt: string;
+}
+
+// ── Segmentation (Phase 2, S3) ──────────────────────────────────────────────
+export type ValueSegment = "VIP" | "large" | "medium" | "small";
+export type CustomerType =
+  | "sinh_hoat"
+  | "san_xuat"
+  | "kcn"
+  | "hanh_chinh"
+  | "dich_vu";
+export interface Segment {
+  customerType: CustomerType;
+  valueSegment: ValueSegment;
+  area: string;
+  behaviorTags: string[];
+}
+export interface SegmentsResponse {
+  customerId: string;
+  segment: Segment;
+}
+export interface Eligibility {
+  customerId: string;
+  campaignId: string;
+  eligible: boolean;
+  reasons: string[];
+}
+
+// ── Water Quality (Phase 3, S35) ────────────────────────────────────────────
+export type QualityStatus = "safe" | "advisory" | "unsafe";
+export interface QualityAtLocation {
+  location: string;
+  testedAt: string;
+  turbidity: number;
+  chlorine: number;
+  ph: number;
+  status: QualityStatus;
+}
+export interface QualityAlert {
+  alertId: string;
+  area: string;
+  parameter: string;
+  value: number;
+  limit: number;
+  issuedAt: string;
+  status: "active" | "resolved";
+}
+export interface QualityAlertsResponse {
+  alerts: QualityAlert[];
+}
+
+// ── Meter Anomaly (Phase 3, S27) ────────────────────────────────────────────
+export type AnomalyType = "continuous_flow" | "backflow" | "no_flow" | "tamper";
+export type AnomalySeverity = "low" | "medium" | "high";
+export interface AnomalyAlert {
+  alertId: string;
+  meterId: string;
+  type: AnomalyType;
+  severity: AnomalySeverity;
+  detectedAt: string;
+}
+export interface AnomalyAlertsResponse {
+  customerId: string;
+  alerts: AnomalyAlert[];
+}
+
+// ── Leakage Alert (Phase 3, S25) ────────────────────────────────────────────
+export type LeakageStatus = "detected" | "investigating" | "confirmed" | "resolved";
+export interface LeakageAlert {
+  alertId: string;
+  customerId: string;
+  suspectedLocation: string;
+  confidence: number;
+  status: LeakageStatus;
+  detectedAt: string;
+}
+export interface LeakageAlertsResponse {
+  customerId: string;
+  alerts: LeakageAlert[];
+}
+export interface ScheduleInspectionResult {
+  alertId: string;
+  inspectionId: string;
+  teamId: string;
+  scheduledAt: string;
+}
+
+// ── Campaign (Phase 3, S33) ─────────────────────────────────────────────────
+export interface CampaignSummary {
+  campaignId: string;
+  title: string;
+  audience: string;
+  startsAt: string;
+  endsAt: string;
+}
+export interface ActiveCampaignsResponse {
+  customerId: string;
+  campaigns: CampaignSummary[];
+}
+export interface MarketingMessage {
+  id: string;
+  title: string;
+  body: string;
+  sentAt: string;
+  read: boolean;
+}
+export interface MarketingMessagesResponse {
+  customerId: string;
+  messages: MarketingMessage[];
+}
+
+// ── e-Contract (Phase 2, S15) ────────────────────────────────────────────────
+export type EcontractStatus = "draft" | "pending_signature" | "signed" | "expired";
+export interface EcontractResponse {
+  dossierId: string;
+  customerId: string;
+  status: EcontractStatus;
+  downloadUrl: string | null;
+  signedAt: string | null;
+}
+export interface SignContractResult {
+  dossierId: string;
+  status: "signed" | "failed";
+  signedAt: string;
+}
+
+// ── Onboarding (Phase 2, S5) ─────────────────────────────────────────────────
+export type OnboardingStage = "documents" | "site_survey" | "contract" | "activation";
+export type OnboardingStatus = "pending" | "in_progress" | "completed" | "rejected";
+export interface OnboardingStatusResponse {
+  requestId: string;
+  customerId: string;
+  stage: OnboardingStage;
+  status: OnboardingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface CreateOnboardingResult {
+  requestId: string;
+  status: OnboardingStatus;
+}
+
+// ── GIS (Phase 2, S30) ───────────────────────────────────────────────────────
+export interface CoverageResult {
+  address: string;
+  covered: boolean;
+  dma: string | null;
+  estimatedConnectionDays: number | null;
+}
+export interface NearbyIncident {
+  id: string;
+  type: string;
+  address: string;
+  status: "reported" | "in_progress" | "resolved";
+  distanceMeters: number;
+  updatedAt: string;
+}
+export interface NearbyIncidentsResponse {
+  latitude: number;
+  longitude: number;
+  incidents: NearbyIncident[];
+}

@@ -10,6 +10,10 @@ import {
   Bell,
   History,
   UserCog,
+  BarChart3,
+  PowerOff,
+  Activity,
+  Users,
 } from "lucide-react";
 
 export interface NavItem {
@@ -32,5 +36,9 @@ export const navItems: NavItem[] = [
   { title: "Hỗ trợ & FAQ", href: "/knowledge-base", icon: HelpCircle, enabled: true },
   { title: "Thông báo", href: "/notifications", icon: Bell, enabled: true },
   { title: "Phiên tương tác", href: "/sessions", icon: History, enabled: true },
+  { title: "Báo cáo", href: "/reports", icon: BarChart3, enabled: true },
+  { title: "Cắt nước", href: "/water-cutoff", icon: PowerOff, enabled: true },
+  { title: "Đồng hồ thông minh", href: "/smart-meter", icon: Activity, enabled: true },
+  { title: "Phân khúc", href: "/segments", icon: Users, enabled: true },
   { title: "Hồ sơ", href: "/profile", icon: UserCog, enabled: true },
 ];
