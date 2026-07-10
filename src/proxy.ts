@@ -34,6 +34,10 @@ const protectedPaths = [
   "/econtracts",
   "/onboarding",
   "/gis",
+  "/call-center",
+  "/site-surveys",
+  "/field-team",
+  "/chatbot",
 ];
 
 export async function proxy(request: NextRequest) {

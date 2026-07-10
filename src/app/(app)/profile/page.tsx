@@ -19,6 +19,9 @@ import {
   Gift,
   FileText,
   Plus,
+  ClipboardList,
+  Truck,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -142,6 +145,10 @@ export default function ProfilePage() {
               { icon: FileText, label: "Hợp đồng điện tử", href: "/econtracts" },
               { icon: Plus, label: "Đăng ký cấp nước", href: "/onboarding" },
               { icon: MapPin, label: "Phạm vi cấp nước", href: "/gis" },
+              { icon: Phone, label: "Tổng đài", href: "/call-center" },
+              { icon: ClipboardList, label: "Khảo sát hiện trường", href: "/site-surveys" },
+              { icon: Truck, label: "Theo dõi đội", href: "/field-team" },
+              { icon: Bot, label: "Trợ lý AI", href: "/chatbot" },
             ] as const
           ).map((u, i, arr) => (
             <Link
