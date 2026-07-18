@@ -1,25 +1,21 @@
-"use client";
-
 import { useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/components/theme-provider";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { makeQueryClient } from "@/lib/query-client";
+import { Toaster } from "@/components/toaster";
 
+/**
+ * Root providers. Web FE also mounted next-themes (forced light) — dropped here;
+ * NativeWind reads tokens from src/global.css and the app forces light via app.json.
+ */
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(() => makeQueryClient());
   return (
     <QueryClientProvider client={client}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="light"
-        forcedTheme="light"
-        enableSystem={false}
-        disableTransitionOnChange
-      >
+      <SafeAreaProvider>
         {children}
-        <Toaster richColors position="top-right" />
-      </ThemeProvider>
+        <Toaster />
+      </SafeAreaProvider>
     </QueryClientProvider>
   );
 }

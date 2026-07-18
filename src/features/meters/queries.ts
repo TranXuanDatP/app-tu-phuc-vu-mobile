@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import type {
@@ -36,10 +34,7 @@ export function useConsumption() {
   });
 }
 
-export function useConsumptionComparison(
-  current?: string,
-  previous?: string,
-) {
+export function useConsumptionComparison(current?: string, previous?: string) {
   return useQuery({
     queryKey: meterKeys.comparison(current ?? "", previous ?? ""),
     queryFn: () =>
@@ -54,8 +49,7 @@ export function useConsumptionComparison(
 export function useReadingDetail(period: string) {
   return useQuery({
     queryKey: meterKeys.reading(period),
-    queryFn: () =>
-      apiClient.get<ReadingDetail>(`/meters/consumption/${period}`),
+    queryFn: () => apiClient.get<ReadingDetail>(`/meters/consumption/${period}`),
     enabled: Boolean(period),
   });
 }
@@ -63,8 +57,7 @@ export function useReadingDetail(period: string) {
 export function useCalibration(meterId: string) {
   return useQuery({
     queryKey: meterKeys.calibration(meterId),
-    queryFn: () =>
-      apiClient.get<CalibrationStatus>(`/meters/${meterId}/calibration`),
+    queryFn: () => apiClient.get<CalibrationStatus>(`/meters/${meterId}/calibration`),
     enabled: Boolean(meterId),
   });
 }

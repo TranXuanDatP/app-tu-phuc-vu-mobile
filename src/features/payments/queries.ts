@@ -1,13 +1,18 @@
-"use client";
-
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/lib/toast";
 import { apiClient } from "@/lib/api-client";
-import type { DebtHistory, OutstandingDebt, PaymentHistoryResponse } from "@/lib/types/entities";
+import { getErrorMessage } from "@/lib/types/api";
+import type {
+  CreatePaymentResponse,
+  DebtHistory,
+  OutstandingDebt,
+  PaymentHistoryResponse,
+  PaymentMethod,
+} from "@/lib/types/entities";
 
 export const paymentKeys = {
   all: ["payments"] as const,
-  history: (params: { page?: number; limit?: number; status?: string }) =>
-    ["payments", "history", params] as const,
+  history: (params: PaymentHistoryParams) => ["payments", "history", params] as const,
   debt: () => ["payments", "debt"] as const,
   debtHistory: () => ["payments", "debt", "history"] as const,
 };
@@ -36,5 +41,19 @@ export function useDebtHistory() {
   return useQuery({
     queryKey: paymentKeys.debtHistory(),
     queryFn: () => apiClient.get<DebtHistory>("/payments/debt/history"),
+  });
+}
+
+/** Create a payment (QR/link) for an invoice. Invalidates payment + invoice caches. */
+export function useCreatePayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { invoiceId: string; method: PaymentMethod }) =>
+      apiClient.post<CreatePaymentResponse>("/payments", input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: paymentKeys.all });
+      qc.invalidateQueries({ queryKey: ["invoices"] });
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 }

@@ -1,19 +1,23 @@
-import * as React from "react";
+import { TextInput, type TextInputProps } from "react-native";
 import { cn } from "@/lib/utils";
+import { colors } from "@/theme/colors";
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => (
-    <input
-      type={type}
+export type InputProps = TextInputProps & { className?: string };
+
+/**
+ * RN Input mirroring web FE components/ui/input. NativeWind `className` applies
+ * styling; `placeholderTextColor` defaults to muted-foreground (className can't
+ * reach it). Screens override via className (e.g. the borderless OTP input).
+ */
+export function Input({ className, placeholderTextColor, ...props }: InputProps) {
+  return (
+    <TextInput
+      placeholderTextColor={placeholderTextColor ?? colors.mutedForeground}
       className={cn(
-        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        "h-12 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground",
         className,
       )}
-      ref={ref}
       {...props}
     />
-  ),
-);
-Input.displayName = "Input";
-
-export { Input };
+  );
+}

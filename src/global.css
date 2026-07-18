@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * QUAWACO design tokens — ported from web FE app-tu-phuc-vu-fe/src/app/globals.css.
+ * Values are space-separated RGB channels so Tailwind opacity modifiers
+ * (bg-card/92, bg-primary/10) work via the `rgb(var(--x) / <alpha-value>)` pattern.
+ * App forces light theme (matches web). --line fixes an undefined token on web
+ * (border-line/bg-line fell back to --border there).
+ */
+:root {
+  --radius: 17px;
+
+  --background: 238 246 248; /* foam   #eef6f8 */
+  --foreground: 10 42 56; /* ink    #0a2a38 */
+  --card: 255 255 255;
+  --card-foreground: 10 42 56;
+  --popover: 255 255 255;
+  --popover-foreground: 10 42 56;
+  --primary: 11 90 120; /* deep teal #0b5a78 */
+  --primary-foreground: 255 255 255;
+  --secondary: 223 241 245; /* aqua-soft #dff1f5 */
+  --secondary-foreground: 11 90 120;
+  --muted: 238 246 248;
+  --muted-foreground: 94 118 131; /* #5e7683 */
+  --accent: 223 241 245;
+  --accent-foreground: 11 90 120;
+  --destructive: 229 83 60; /* coral #e5533c */
+  --destructive-foreground: 255 255 255;
+  --success: 27 158 119; /* mint #1b9e77 */
+  --success-foreground: 255 255 255;
+  --warning: 201 121 26; /* amber #c9791a */
+  --warning-foreground: 255 255 255;
+  --border: 227 236 239; /* #e3ecef */
+  --input: 227 236 239;
+  --ring: 22 166 194; /* aqua #16a6c2 */
+  --line: 227 236 239; /* NEW — web left this undefined */
+
+  /* design semantic colors */
+  --ink: 10 42 56;
+  --deep: 11 90 120;
+  --aqua: 22 166 194;
+  --aqua-soft: 223 241 245;
+  --foam: 238 246 248;
+  --mint: 27 158 119;
+  --mint-soft: 225 243 236;
+  --amber: 201 121 26;
+  --amber-soft: 251 238 220;
+  --coral: 229 83 60;
+  --coral-soft: 252 230 225;
+}

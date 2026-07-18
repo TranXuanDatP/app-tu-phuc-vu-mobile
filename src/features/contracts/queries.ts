@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import type {
@@ -40,12 +38,15 @@ export function useContract(contractId: string) {
 export function useContractVersions(contractId: string) {
   return useQuery({
     queryKey: contractKeys.versions(contractId),
-    queryFn: () =>
-      apiClient.get<ContractVersionsResponse>(`/contracts/${contractId}/versions`),
+    queryFn: () => apiClient.get<ContractVersionsResponse>(`/contracts/${contractId}/versions`),
     enabled: Boolean(contractId),
   });
 }
 
-export function fetchContractPdf(contractId: string) {
-  return apiClient.get<ContractPdf>(`/contracts/${contractId}/pdf`);
+export function useContractPdf(contractId: string) {
+  return useQuery({
+    queryKey: contractKeys.pdf(contractId),
+    queryFn: () => apiClient.get<ContractPdf>(`/contracts/${contractId}/pdf`),
+    enabled: Boolean(contractId),
+  });
 }

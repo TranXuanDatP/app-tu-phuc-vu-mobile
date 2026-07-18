@@ -1,9 +1,8 @@
-"use client";
-
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useRouter } from "expo-router";
+import { toast } from "@/lib/toast";
 import { authClient } from "@/lib/auth-client";
+import { linkedKh } from "@/lib/linked-kh";
 
 export interface PhoneLoginState {
   step: "phone" | "otp";
@@ -15,9 +14,13 @@ export interface PhoneLoginState {
 /**
  * Two-step phone/OTP login backed by better-auth's phoneNumber plugin
  * (matches backend otpLength:6, expiresIn:300s).
+ *
+ * Difference from web: on verify success the hook does NOT navigate — it returns
+ * true. The login screen's session effect then runs the phone→link-customer
+ * auto-match and routes to /(app)/dashboard or /(auth)/link-kh. (Web had two
+ * competing redirects; consolidated here.)
  */
 export function usePhoneLogin() {
-  const router = useRouter();
   const [state, setState] = useState<PhoneLoginState>({
     step: "phone",
     phoneNumber: "",
@@ -28,39 +31,33 @@ export function usePhoneLogin() {
   const sendOtp = useCallback(async (phoneNumber: string) => {
     setState((s) => ({ ...s, isSending: true }));
     try {
-      // better-auth phoneNumber plugin: send OTP to the phone number.
       const { error } = await authClient.phoneNumber.sendOtp({ phoneNumber });
       if (error) throw error;
       setState((s) => ({ ...s, step: "otp", phoneNumber, isSending: false }));
       toast.success("Đã gửi mã OTP đến số điện thoại của bạn.");
     } catch (err) {
       setState((s) => ({ ...s, isSending: false }));
-      const message =
-        (err as { message?: string })?.message ?? "Không gửi được OTP. Vui lòng thử lại.";
-      toast.error(message);
+      toast.error((err as { message?: string })?.message ?? "Không gửi được OTP. Vui lòng thử lại.");
     }
   }, []);
 
-  const verifyOtp = useCallback(
-    async (code: string) => {
-      setState((s) => ({ ...s, isVerifying: true }));
-      try {
-        const { error } = await authClient.phoneNumber.verify({
-          phoneNumber: state.phoneNumber,
-          code,
-        });
-        if (error) throw error;
-        toast.success("Đăng nhập thành công.");
-        router.replace("/dashboard");
-      } catch (err) {
-        setState((s) => ({ ...s, isVerifying: false }));
-        const message =
-          (err as { message?: string })?.message ?? "Mã OTP không đúng hoặc đã hết hạn.";
-        toast.error(message);
-      }
-    },
-    [state.phoneNumber, router],
-  );
+  const verifyOtp = useCallback(async (code: string): Promise<boolean> => {
+    setState((s) => ({ ...s, isVerifying: true }));
+    try {
+      const { error } = await authClient.phoneNumber.verify({
+        phoneNumber: state.phoneNumber,
+        code,
+      });
+      if (error) throw error;
+      setState((s) => ({ ...s, isVerifying: false }));
+      toast.success("Đăng nhập thành công.");
+      return true; // session established — screen effect handles routing
+    } catch (err) {
+      setState((s) => ({ ...s, isVerifying: false }));
+      toast.error((err as { message?: string })?.message ?? "Mã OTP không đúng hoặc đã hết hạn.");
+      return false;
+    }
+  }, [state.phoneNumber]);
 
   const reset = useCallback(() => {
     setState({ step: "phone", phoneNumber: "", isSending: false, isVerifying: false });
@@ -72,6 +69,8 @@ export function usePhoneLogin() {
 export function useSignOut() {
   const router = useRouter();
   return useCallback(async () => {
-    await authClient.signOut({ fetchOptions: { onSuccess: () => router.replace("/login") } });
+    await authClient.signOut({});
+    await linkedKh.remove();
+    router.replace("/login");
   }, [router]);
 }

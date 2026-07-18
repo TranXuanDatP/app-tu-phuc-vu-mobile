@@ -1,20 +1,22 @@
 import { ApiError, type ApiErrorResponse, type ApiResponse } from "@/lib/types/api";
+import { env } from "@/lib/env";
+import { getAuthCookie } from "@/lib/auth-token";
 
 /**
- * Typed fetch wrapper over the BFF.
+ * Typed fetch wrapper over the backend (mobile port of web FE api-client.ts).
  *
- * - Calls same-origin `/api/bff/*` paths (proxied to the backend by next.config.ts
- *   rewrites), so the HttpOnly session cookie is sent automatically.
- * - Unwraps the backend envelope: returns `data` directly.
- * - Converts EVERY failure path (network, malformed response, HTTP/logic error)
- *   into a uniform `ApiError` with a stable `displayMessage`.
+ * Differences from web:
+ *  - baseUrl = backend root (EXPO_PUBLIC_API_URL), not same-origin `/api/bff`. Call
+ *    sites still pass bare backend paths (`/customers/profile`, `/billing/invoices`).
+ *  - No cookie jar on RN → the better-auth session cookie (from expoClient's
+ *    SecureStore) is attached as a `Cookie` header via `getAuthCookie()` instead of
+ *    `credentials: "include"`.
  *
- * The `/api/bff` prefix is essential: backend routes live at root (`/meters`, …)
- * which collide with Next page routes. `/api/bff/*` has no page routes, so
- * rewrites always fire. Call sites pass bare backend paths (e.g. `/meters`).
+ * Unchanged: envelope unwrap (returns `data`), ApiError normalization for every
+ * failure path (network / parse / HTTP / backend logic error).
  */
 export class ApiClient {
-  constructor(private readonly baseUrl: string = "/api/bff") {}
+  constructor(private readonly baseUrl: string = env.apiUrl) {}
 
   private buildUrl(path: string, query?: Record<string, unknown> | object): string {
     const url = `${this.baseUrl}${path}`;
@@ -35,14 +37,18 @@ export class ApiClient {
     const { query, headers, ...rest } = options;
     const endpoint = this.buildUrl(path, query);
 
+    // Attach the better-auth session cookie (cookie-jar replacement for RN).
+    const cookie = getAuthCookie();
+    const authHeaders: Record<string, string> = cookie ? { Cookie: cookie } : {};
+
     let response: Response;
-    // 1. Network Error guard (CORS, offline, DNS, proxy down).
+    // 1. Network Error guard (CORS, offline, DNS, backend down).
     try {
       response = await fetch(endpoint, {
         ...rest,
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          ...authHeaders,
           ...headers,
         },
       });
@@ -65,17 +71,14 @@ export class ApiClient {
         name: "ParseError",
         code: "INVALID_JSON",
         message: `Lỗi máy chủ (${response.status}): Phản hồi không đúng định dạng.`,
-        details: text.slice(0, 100), // first 100 chars for debugging
+        details: text.slice(0, 100),
       });
     }
 
     // 3. HTTP Error or Backend Logic Error (envelope success === false).
     if (!response.ok || (json && json.success === false)) {
       const err = json as ApiErrorResponse | undefined;
-      throw new ApiError(
-        err?.statusCode ?? response.status,
-        err?.error ?? response.statusText,
-      );
+      throw new ApiError(err?.statusCode ?? response.status, err?.error ?? response.statusText);
     }
 
     // Success — tolerate empty/no-content (e.g. 204) without crashing on `.data`.
@@ -108,5 +111,5 @@ export class ApiClient {
   }
 }
 
-/** Singleton client. Same-origin `/api/bff/*` paths, proxied to the backend. */
+/** Singleton client. Calls backend root cross-origin; session cookie injected per-request. */
 export const apiClient = new ApiClient();

@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import type { CutoffSchedule, CutoffStatus } from "@/lib/types/entities";
@@ -21,7 +19,7 @@ export function useCutoffSchedule(areaId: string) {
   return useQuery({
     queryKey: cutoffKeys.schedule(areaId),
     queryFn: () =>
-      apiClient.get<CutoffSchedule>(`/water-cutoff/schedule/${areaId}`),
+      apiClient.get<CutoffSchedule>(`/notifications/cutoff-schedule/${areaId}`),
     enabled: Boolean(areaId),
   });
 }

@@ -1,33 +1,43 @@
-"use client";
-
 import { createAuthClient } from "better-auth/react";
 import { phoneNumberClient } from "better-auth/client/plugins";
+import { expoClient, storageAdapter } from "@better-auth/expo/client";
+import * as SecureStore from "expo-secure-store";
+import { env } from "@/lib/env";
+import { setAuthCookieGetter } from "@/lib/auth-token";
 
 /**
- * better-auth React client.
+ * better-auth client for Expo/React Native.
  *
- * baseURL MUST be absolute (better-auth rejects relative URLs server-side
- * during prerender). It points same-origin to /api/auth, which next.config.ts
- * rewrites proxy to the backend — so the HttpOnly session cookie flows
- * automatically and no CORS config is needed on the backend.
+ * Web FE used `better-auth/react` with `credentials: "include"` (HttpOnly cookie,
+ * same-origin). RN has no cookie jar and calls cross-origin, so we use the
+ * `@better-auth/expo` `expoClient` plugin:
+ *  - `storage`: SecureStore-backed (sync getItem/setItem), wrapped in `storageAdapter`
+ *    which chunks values past SecureStore's ~2KB per-key limit.
+ *  - the plugin exposes `authClient.getCookie()` (sync) → wired to apiClient via
+ *    setAuthCookieGetter, so BFF data calls carry the session cookie as a header.
  *
- * Mirrors the backend better-auth setup (better-auth ^1.6.14, phoneNumber plugin).
+ * Backend dependency (see plan): Fastify CORS + `BETTER_AUTH_TRUSTED_ORIGINS` must
+ * allow this app, or auth calls are rejected cross-origin. No bearer plugin needed —
+ * cookie transport via header works on RN.
  */
-const AUTH_BASE_URL =
-  process.env.NEXT_PUBLIC_APP_ORIGIN?.replace(/\/$/, "") ??
-  "http://localhost:3001";
-
 export const authClient = createAuthClient({
-  baseURL: `${AUTH_BASE_URL}/api/auth`,
-  fetchOptions: {
-    credentials: "include",
-  },
-  plugins: [phoneNumberClient()],
+  baseURL: env.authUrl,
+  plugins: [
+    phoneNumberClient(),
+    expoClient({
+      scheme: "apptuphucvumobile",
+      storagePrefix: "bac",
+      storage: storageAdapter({
+        getItem: (key) => SecureStore.getItem(key),
+        setItem: (key, value) => SecureStore.setItem(key, value),
+      }),
+    }),
+  ],
 });
 
-// Convenience re-exports for hooks/components.
-export const {
-  useSession,
-  signIn,
-  signOut,
-} = authClient;
+// Bridge apiClient → session cookie. expoClient adds getCookie() to the client.
+type AuthClientWithCookie = typeof authClient & { getCookie?: () => string };
+const clientWithCookie = authClient as AuthClientWithCookie;
+setAuthCookieGetter(() => clientWithCookie.getCookie?.() ?? "");
+
+export const { useSession, signIn, signOut } = authClient;
