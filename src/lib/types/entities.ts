@@ -868,7 +868,6 @@ export interface AuthMeResponse {
  */
 export interface RegisterPayload {
   fullName: string;
-  cccd: string;
   classification: CustomerClassification;
   address: { street: string; ward: string; district: string; city: string };
   email?: string;

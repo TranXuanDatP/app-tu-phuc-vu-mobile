@@ -10,8 +10,6 @@ import { toast } from "@/lib/toast";
 import { colors } from "@/theme/colors";
 import type { CustomerClassification } from "@/lib/types/entities";
 
-// Mirrors the BFF RegisterSchema regex (9 or 12 digits).
-const CCCD_RE = /^\d{9}$|^\d{12}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const CLASSIFICATIONS: { value: CustomerClassification; label: string }[] = [
@@ -22,7 +20,6 @@ const CLASSIFICATIONS: { value: CustomerClassification; label: string }[] = [
 
 type FieldErrors = {
   fullName?: string;
-  cccd?: string;
   classification?: string;
   street?: string;
   ward?: string;
@@ -39,21 +36,16 @@ interface AddressState {
 }
 
 /**
- * New-customer registration (replaces complete-profile). Collects the FULL info
- * needed to create a Customer 360 record — identity (Họ tên, CCCD), phân loại, and
- * a structured address (+ optional email). Submit → POST /auth/register → the BFF
- * creates a customer (mock-first) + links it to the auth user, then routes to the
- * dashboard with full access.
- *
- * PII (NĐ13): CCCD is entry-only — never logged, never persisted client-side, only
- * sent in the POST body. The BFF never returns the value. Switch to HTTPS before
- * production (dev runs plain HTTP on LAN).
+ * New-customer registration (replaces complete-profile). Collects the info needed
+ * to create a Customer 360 record — Họ tên, phân loại, a structured address (+ optional
+ * email). CCCD / identity verification is NOT part of registration (a separate, undecided
+ * plan). Submit → POST /auth/register → the BFF creates a customer (mock-first) + links it
+ * to the auth user, then routes to the dashboard with full access.
  */
 export default function RegisterScreen() {
   const { data: session, isPending } = useSession();
   const register = useRegister();
   const [fullName, setFullName] = useState("");
-  const [cccd, setCccd] = useState("");
   const [classification, setClassification] = useState<CustomerClassification>("sinh_hoat");
   const [address, setAddress] = useState<AddressState>({ street: "", ward: "", district: "", city: "" });
   const [email, setEmail] = useState("");
@@ -73,7 +65,6 @@ export default function RegisterScreen() {
   function validate(): boolean {
     const next: FieldErrors = {};
     if (fullName.trim().length < 2) next.fullName = "Nhập họ tên (tối thiểu 2 ký tự)";
-    if (!CCCD_RE.test(cccd.trim())) next.cccd = "CCCD phải là 9 hoặc 12 chữ số";
     if (!address.street.trim()) next.street = "Nhập số nhà + đường";
     if (!address.ward.trim()) next.ward = "Nhập phường/xã";
     if (!address.district.trim()) next.district = "Nhập quận/huyện";
@@ -88,7 +79,6 @@ export default function RegisterScreen() {
     try {
       await register.mutateAsync({
         fullName: fullName.trim(),
-        cccd: cccd.trim(),
         classification,
         address: {
           street: address.street.trim(),
@@ -131,19 +121,6 @@ export default function RegisterScreen() {
               if (errors.fullName) setErrors((p) => ({ ...p, fullName: undefined }));
             }}
             error={errors.fullName}
-            className="h-[52px] rounded-[13px] text-base"
-          />
-
-          <FormField
-            label="Số CCCD / CMND"
-            placeholder="012345678901"
-            keyboardType="number-pad"
-            value={cccd}
-            onChangeText={(v) => {
-              setCccd(v.replace(/\D/g, "").slice(0, 12));
-              if (errors.cccd) setErrors((p) => ({ ...p, cccd: undefined }));
-            }}
-            error={errors.cccd}
             className="h-[52px] rounded-[13px] text-base"
           />
 
@@ -240,8 +217,7 @@ export default function RegisterScreen() {
           <View className="mt-2 flex-row items-start gap-1.5">
             <ShieldCheck size={14} color={colors.mutedForeground} />
             <Text className="flex-1 text-[11.5px] leading-relaxed text-muted-foreground">
-              Thông tin định danh được mã hoá (AES-256) và bảo mật theo quy định. CCCD chỉ dùng để đối
-              soát hồ sơ khách hàng.
+              Thông tin của bạn được bảo mật theo quy định. Xác thực định danh (CCCD) sẽ được bổ sung sau.
             </Text>
           </View>
         </View>
