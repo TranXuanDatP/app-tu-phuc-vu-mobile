@@ -11,6 +11,7 @@ import {
   FileText,
   MessageSquare,
   PhoneCall,
+  ShieldCheck,
   Siren,
   type LucideIcon,
 } from "lucide-react-native";
@@ -19,6 +20,7 @@ import { useCustomerProfile } from "@/features/customers/queries";
 import { useInvoices } from "@/features/invoices/queries";
 import { useConsumption } from "@/features/meters/queries";
 import { useCutoffSchedule } from "@/features/water-cutoff/queries";
+import { useProfileStatus } from "@/features/auth/hooks";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { colors } from "@/theme/colors";
@@ -28,6 +30,12 @@ export default function DashboardScreen() {
   const invoices = useInvoices({ status: "unpaid", limit: 1 });
   const consumption = useConsumption();
   const cutoff = useCutoffSchedule("CP-DMA-1");
+  // Identity status — drives the limited-mode banner. poll=true so that when the
+  // async (RabbitMQ) identity path lands, a `complete`/`no_match` flip is picked
+  // up live and the banner updates without code changes. Bounded + paused on
+  // background (see useProfileStatus).
+  const me = useProfileStatus({ poll: true });
+  const profileComplete = me.data?.profileStatus === "complete";
   const bill = invoices.data?.invoices[0];
   const outage = cutoff.data?.schedules[0];
   const insets = useSafeAreaInsets();
@@ -50,18 +58,23 @@ export default function DashboardScreen() {
           <Text className="text-[13px] font-extrabold tracking-wide text-white">QUAWACO</Text>
         </View>
         <Text className="text-[13px] font-medium text-white/90">Chào buổi sáng,</Text>
-        {profile.isLoading ? (
-          <Skeleton className="mt-1 h-6 w-40 bg-white/25" />
-        ) : (
-          <Text className="text-xl font-extrabold text-white">
-            {profile.data?.fullName ?? "Khách hàng"}
+        {profileComplete ? (
+          profile.isLoading ? (
+            <Skeleton className="mt-1 h-6 w-40 bg-white/25" />
+          ) : (
+            <Text className="text-xl font-extrabold text-white">
+              {profile.data?.fullName ?? "Khách hàng"}
+            </Text>
+          )
+        ) : null}
+        {profileComplete ? (
+          <Text className="mt-0.5 max-w-[80%] text-xs text-white/85">
+            {profile.data?.address?.fullAddress ?? ""}
           </Text>
-        )}
-        <Text className="mt-0.5 max-w-[80%] text-xs text-white/85">
-          {profile.data?.address?.fullAddress ?? ""}
-        </Text>
+        ) : null}
 
-        {/* Bill card */}
+        {/* Bill card — hidden in limited mode (don't leak fixture billing data) */}
+        {profileComplete && (
         <View className="mt-5 rounded-[18px] border border-white/25 bg-white/15 p-4">
           {invoices.isLoading ? (
             <Skeleton className="h-20 w-full bg-white/25" />
@@ -85,9 +98,11 @@ export default function DashboardScreen() {
             <Text className="text-sm text-white/90">Không có hóa đơn chờ thanh toán 🎉</Text>
           )}
         </View>
+        )}
       </LinearGradient>
 
-      {/* Quick actions */}
+      {/* Quick actions — hidden in limited mode */}
+      {profileComplete && (
       <View className="-mt-10 flex-row gap-2.5 px-4">
         <QuickAction
           icon={CreditCard}
@@ -98,8 +113,33 @@ export default function DashboardScreen() {
         <QuickAction icon={Bell} label="Thông báo" onPress={() => router.push("/notifications")} />
         <QuickAction icon={Siren} label="Báo sự cố" onPress={() => router.push("/incidents")} />
       </View>
+      )}
 
-      {/* Consumption */}
+      {/* Limited-mode banner — until identity is complete */}
+      {!profileComplete && me.data ? (
+        <View className="px-4 pt-4">
+          <LinearGradient colors={[colors.deep, colors.aqua]} style={{ borderRadius: 18, padding: 16 }}>
+            <View className="flex-row items-center gap-2">
+              <ShieldCheck size={18} color="white" />
+              <Text className="flex-1 text-[15px] font-bold text-white">
+                Hoàn tất hồ sơ để dùng đầy đủ tính năng
+              </Text>
+            </View>
+            <Text className="mt-1 text-[12.5px] leading-snug text-white/90">
+              Một số tính năng bị giới hạn cho đến khi bạn cập nhật định danh.
+            </Text>
+            <Pressable
+              onPress={() => router.push("/register")}
+              className="mt-3 items-center rounded-xl bg-white py-2.5 active:opacity-80"
+            >
+              <Text className="text-[14px] font-extrabold text-deep">Hoàn tất định danh</Text>
+            </Pressable>
+          </LinearGradient>
+        </View>
+      ) : null}
+
+      {/* Consumption — hidden in limited mode */}
+      {profileComplete && (
       <View className="px-4 pt-4">
         <Pressable
           onPress={() => router.push("/meters")}
@@ -115,6 +155,7 @@ export default function DashboardScreen() {
           <ChevronRight size={20} color={colors.mutedForeground} />
         </Pressable>
       </View>
+      )}
 
       {/* Alerts */}
       <View className="gap-3 px-4 pt-5">
@@ -145,7 +186,7 @@ export default function DashboardScreen() {
           </Text>
           <View className="mt-3 flex-row gap-2.5">
             <Pressable
-              onPress={() => toast.info("Chat — sắp có")}
+              onPress={() => router.push("/chat")}
               className="flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 active:opacity-80"
             >
               <MessageSquare size={16} color={colors.deep} />

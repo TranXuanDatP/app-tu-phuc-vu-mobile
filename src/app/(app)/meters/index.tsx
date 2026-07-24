@@ -7,6 +7,7 @@ import { useConsumption } from "@/features/meters/queries";
 import { Skeleton } from "@/components/ui";
 import { formatNumber } from "@/lib/utils";
 import { colors } from "@/theme/colors";
+import { ProfileGate } from "@/features/auth/profile-gate";
 
 /** Consumption ring (SVG) — current month vs the period peak. */
 function Ring({ pct, volume }: { pct: number; volume: number }) {
@@ -41,6 +42,14 @@ function Ring({ pct, volume }: { pct: number; volume: number }) {
 }
 
 export default function UsageScreen() {
+  return (
+    <ProfileGate>
+      <UsageContent />
+    </ProfileGate>
+  );
+}
+
+function UsageContent() {
   const { data, isLoading } = useConsumption();
   const readings = (data?.readings ?? []).slice().sort((a, b) => a.month.localeCompare(b.month));
   const current = readings.at(-1);

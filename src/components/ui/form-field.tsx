@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import { Input, type InputProps } from "./input";
 
-/** Labeled input wrapper with optional error (mirrors the login/link-kh field pattern). */
+/** Labeled input wrapper with optional error (mirrors the login field pattern). */
 export function FormField({
   label,
   error,

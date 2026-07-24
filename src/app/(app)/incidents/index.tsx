@@ -7,6 +7,7 @@ import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { SkeletonList, ErrorRetry } from "@/components/ui";
 import { formatDateTime } from "@/lib/utils";
 import { colors } from "@/theme/colors";
+import { ProfileGate } from "@/features/auth/profile-gate";
 import type { IncidentReport } from "@/features/incidents/queries";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -25,6 +26,14 @@ const STATUS_BADGE: Record<string, { variant: BadgeVariant; label: string }> = {
 };
 
 export default function IncidentsScreen() {
+  return (
+    <ProfileGate>
+      <IncidentsContent />
+    </ProfileGate>
+  );
+}
+
+function IncidentsContent() {
   const { data, isLoading, isError, refetch, isRefetching } = useMyReports();
   const reports = data?.reports ?? [];
 

@@ -5,6 +5,7 @@ import { AppBar } from "@/components/layout/app-bar";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui";
 import { useContract } from "@/features/contracts/queries";
+import { ProfileGate } from "@/features/auth/profile-gate";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const SUB_TYPE: Record<string, string> = {
@@ -21,6 +22,14 @@ const STATUS: Record<string, { variant: BadgeVariant; label: string }> = {
 };
 
 export default function ContractDetailScreen() {
+  return (
+    <ProfileGate>
+      <ContractDetailContent />
+    </ProfileGate>
+  );
+}
+
+function ContractDetailContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: c, isLoading } = useContract(id);
 

@@ -10,6 +10,7 @@ import { useInvoice } from "@/features/invoices/queries";
 import { useCreatePayment } from "@/features/payments/queries";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { colors } from "@/theme/colors";
+import { ProfileGate } from "@/features/auth/profile-gate";
 import type { PaymentMethod } from "@/lib/types/entities";
 
 const METHODS: { value: PaymentMethod; label: string; icon: typeof QrCode; desc: string }[] = [
@@ -19,6 +20,14 @@ const METHODS: { value: PaymentMethod; label: string; icon: typeof QrCode; desc:
 ];
 
 export default function PayScreen() {
+  return (
+    <ProfileGate>
+      <PayContent />
+    </ProfileGate>
+  );
+}
+
+function PayContent() {
   const { invoiceId } = useLocalSearchParams<{ invoiceId: string }>();
   const { data: invoice, isLoading } = useInvoice(invoiceId);
   const create = useCreatePayment();

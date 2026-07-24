@@ -8,6 +8,7 @@ import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { SkeletonList, EmptyState, ErrorRetry } from "@/components/ui";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { colors } from "@/theme/colors";
+import { ProfileGate } from "@/features/auth/profile-gate";
 import type { InvoiceListItem, InvoiceStatusFilter } from "@/lib/types/entities";
 
 const FILTERS: { label: string; value: InvoiceStatusFilter | undefined }[] = [
@@ -25,6 +26,14 @@ const STATUS_BADGE: Record<string, { variant: BadgeVariant; label: string }> = {
 };
 
 export default function InvoicesScreen() {
+  return (
+    <ProfileGate>
+      <InvoicesContent />
+    </ProfileGate>
+  );
+}
+
+function InvoicesContent() {
   const [status, setStatus] = useState<InvoiceStatusFilter | undefined>(undefined);
   const { data, isLoading, isError, refetch, isRefetching } = useInvoices({ status, limit: 20 });
 

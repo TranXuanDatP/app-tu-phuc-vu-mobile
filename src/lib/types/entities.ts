@@ -838,3 +838,68 @@ export interface NearbyIncidentsResponse {
   longitude: number;
   incidents: NearbyIncident[];
 }
+
+// ── Auth / Identity (profile_status flow) ───────────────────────────────────
+/**
+ * Identity profile status (mirrors BFF `users.profile_status` enum).
+ * - incomplete: freshly created user, identity not yet resolved (event path) or
+ *   entered manually. Treated as "limited mode" by the mobile gate.
+ * - complete:   identity captured (manual entry or Customer 360 match).
+ * - no_match:   event-driven resolution found no Customer 360 record → user must
+ *   enter identity manually. (Set by the RabbitMQ reply consumer — not yet built.)
+ */
+export type ProfileStatus = "incomplete" | "complete" | "no_match";
+
+/** GET /auth/me — polled after OTP to drive routing + the limited-mode gate. */
+export interface AuthMeResponse {
+  userId: string;
+  profileStatus: ProfileStatus;
+  fullName: string | null;
+  /** Boolean only — the CCCD value is never returned by the BFF (NĐ13). */
+  hasCccd: boolean;
+  customerId: string | null;
+  linked: boolean;
+}
+
+/**
+ * POST /auth/register — app signup for a NEW customer (replaces complete-profile).
+ * Collects the full info needed to create a Customer 360 record (mock-first in the
+ * BFF: the BFF creates an in-memory customer + links it to the auth user).
+ */
+export interface RegisterPayload {
+  fullName: string;
+  cccd: string;
+  classification: CustomerClassification;
+  address: { street: string; ward: string; district: string; city: string };
+  email?: string;
+}
+
+export interface RegisterResponse {
+  ok: boolean;
+  profileStatus: "complete";
+  customerId: string;
+  linked: boolean;
+}
+
+/** POST /auth/check-registration — post-OTP match against Customer 360 by phone. */
+export interface CheckRegistrationResponse {
+  registered: boolean;
+  profileStatus: ProfileStatus;
+  customerId?: string;
+}
+
+// ── Chat (customer ↔ staff, aggregated in omnichannel_be) ───────────────────
+export interface ChatMessage {
+  id: string;
+  content: string;
+  /** INBOUND = from the customer (this app); OUTBOUND = from staff (agent reply). */
+  direction: "INBOUND" | "OUTBOUND";
+  senderType: "CUSTOMER" | "AGENT" | "BOT" | "SYSTEM";
+  createdAt: string;
+}
+
+/** GET /call-center/messages — the customer's active chat thread. */
+export interface ChatConversation {
+  conversationId: string | null;
+  messages: ChatMessage[];
+}

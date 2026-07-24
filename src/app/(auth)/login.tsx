@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { usePhoneLogin } from "@/features/auth/hooks";
 import { useSession } from "@/lib/auth-client";
 import { apiClient } from "@/lib/api-client";
-import { linkedKh } from "@/lib/linked-kh";
+import type { CheckRegistrationResponse } from "@/lib/types/entities";
 import { colors } from "@/theme/colors";
 
 // Local VN mobile digits WITHOUT the leading 0 — the +84 prefix is fixed in the UI.
@@ -21,41 +21,33 @@ export default function LoginScreen() {
   const [otp, setOtp] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(0);
 
-  // Post-login auto-match: session up → linked? dashboard : phone-match → dashboard/link-kh.
+  // Post-OTP routing: match the user against Customer 360 by phone. Matched
+  // (existing customer) → dashboard (full). Unmatched → "Bạn chưa đăng ký tài
+  // khoản" → registration. On check error, fall back to the not-registered
+  // screen (safe default — never assume registered).
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
     (async () => {
-      const linked = await linkedKh.get();
-      if (linked) {
-        if (!cancelled) router.replace("/dashboard");
-        return;
-      }
       try {
-        const result = await apiClient.post<{ matched: boolean; customer?: { customerId?: string } }>(
-          "/auth/link-customer",
-          { phone: `+84${phone}` },
+        const r = await apiClient.post<CheckRegistrationResponse>(
+          "/auth/check-registration",
         );
         if (cancelled) return;
-        if (result?.matched) {
-          await linkedKh.set(result.customer?.customerId ?? "matched");
-          router.replace("/dashboard");
-        } else {
-          router.replace("/link-kh");
-        }
+        router.replace(r?.registered ? "/dashboard" : "/not-registered");
       } catch {
-        if (!cancelled) router.replace("/link-kh");
+        if (!cancelled) router.replace("/not-registered");
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [session, phone]);
+  }, [session]);
 
-  // 300s resend countdown while on the OTP step.
+  // 30s resend countdown while on the OTP step (button enables at 0).
   useEffect(() => {
     if (login.step !== "otp") return;
-    setSecondsLeft(300);
+    setSecondsLeft(30);
     const id = setInterval(() => {
       setSecondsLeft((s) => {
         if (s <= 1) {
