@@ -42,12 +42,16 @@ export class ApiClient {
     const authHeaders: Record<string, string> = cookie ? { Cookie: cookie } : {};
 
     let response: Response;
+    // Only set Content-Type: application/json when there IS a body — a POST with
+    // no body but Content-Type: application/json makes Fastify reject ("body
+    // cannot be empty"), which broke check-registration (POST, no body).
+    const hasBody = rest.body !== undefined && rest.body !== null;
     // 1. Network Error guard (CORS, offline, DNS, backend down).
     try {
       response = await fetch(endpoint, {
         ...rest,
         headers: {
-          "Content-Type": "application/json",
+          ...(hasBody ? { "Content-Type": "application/json" } : {}),
           ...authHeaders,
           ...headers,
         },
