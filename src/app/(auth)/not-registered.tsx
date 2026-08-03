@@ -36,6 +36,9 @@ export default function NotRegisteredScreen() {
           <Text className="mt-1.5 text-center text-[13.5px] text-white/90">
             Số điện thoại chưa có hồ sơ khách hàng. Đăng ký để sử dụng dịch vụ nước.
           </Text>
+          <Text className="mt-1 text-center text-[12px] text-white/70">
+            Nếu bạn là khách hàng của QUAWACO, liên hệ tổng đài để được hỗ trợ.
+          </Text>
         </LinearGradient>
 
         <View className="flex-1 gap-3 px-6 py-6">
