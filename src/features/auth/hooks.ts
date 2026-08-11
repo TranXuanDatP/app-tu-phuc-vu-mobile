@@ -9,7 +9,6 @@ import { useAppActive } from "@/lib/use-app-active";
 import type {
   AuthMeResponse,
   RegisterPayload,
-  RegisterResponse,
   ResolveResult,
   BindPayload,
   BindResponse,
@@ -137,29 +136,23 @@ export function useProfileStatus(opts?: { poll?: boolean; pollDurationMs?: numbe
 }
 
 /**
- * POST /auth/register — app signup for a NEW customer (creates a Customer 360
- * record mock-first + links it to the auth user). On success, flip the cached
- * profile status to `complete` immediately so the gate opens and the dashboard
- * banner disappears without waiting for a refetch, then invalidate to pull the
- * freshly-persisted data.
+ * POST /auth/register — the NEW-CUSTOMER branch of the unified bind flow (resolve-gated).
+ * The BFF creates a Customer 360 record + inserts a VERIFIED binding (creation = proof),
+ * returning {bound, customerId} (no `linked` field). On success we invalidate /auth/me so
+ * the next read flips `linked` true from the freshly-written binding row → gate opens.
+ *
+ * Two 409 reject points (BE) both throw code CUSTOMER_EXISTS_USE_BIND — the screen reroutes
+ * to /bind (the challenge branch) instead of treating it as a generic error.
  */
 export function useRegister() {
   const queryClient = useQueryClient();
 
-  return useMutation<RegisterResponse, Error, RegisterPayload>({
-    mutationFn: (payload) => apiClient.post<RegisterResponse>("/auth/register", payload),
+  return useMutation<BindResponse, Error, RegisterPayload>({
+    mutationFn: (payload) => apiClient.post<BindResponse>("/auth/register", payload),
     onSuccess: (data) => {
-      queryClient.setQueryData<AuthMeResponse>(AUTH_ME_KEY, (prev) =>
-        prev
-          ? {
-              ...prev,
-              profileStatus: "complete",
-              linked: data.linked,
-              customerId: data.customerId,
-            }
-          : prev,
-      );
-      queryClient.invalidateQueries({ queryKey: AUTH_ME_KEY });
+      if (data.bound) {
+        queryClient.invalidateQueries({ queryKey: AUTH_ME_KEY });
+      }
     },
   });
 }

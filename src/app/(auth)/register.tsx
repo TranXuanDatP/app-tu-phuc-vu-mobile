@@ -7,6 +7,7 @@ import { FormField } from "@/components/ui/form-field";
 import { useRegister } from "@/features/auth/hooks";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "@/lib/toast";
+import { ApiError } from "@/lib/types/api";
 import { colors } from "@/theme/colors";
 import type { CustomerClassification } from "@/lib/types/entities";
 
@@ -91,7 +92,15 @@ export default function RegisterScreen() {
       toast.success("Đăng ký thành công. Chào mừng bạn!");
       router.replace("/dashboard");
     } catch (err) {
-      toast.error((err as { message?: string })?.message ?? "Không đăng ký được. Thử lại.");
+      // 409 CUSTOMER_EXISTS_USE_BIND — a customer for this phone already exists (race tail
+      // or re-resolve). The register branch is resolve-gated against exactly this; reroute
+      // to the bind (challenge) flow instead of showing a generic error.
+      if (err instanceof ApiError && err.code === "CUSTOMER_EXISTS_USE_BIND") {
+        toast.info("Khách hàng đã tồn tại với số này — chuyển sang liên kết tài khoản.");
+        router.replace("/bind");
+      } else {
+        toast.error((err as { message?: string })?.message ?? "Không đăng ký được. Thử lại.");
+      }
     }
   }
 
