@@ -39,6 +39,10 @@ export interface ApiErrorResponse {
 export class ApiError extends Error {
   public readonly statusCode: number;
   public readonly displayMessage: string;
+  /** Structured BE error code (e.g. BINDING_LOCKED, CUSTOMER_EXISTS_USE_BIND). */
+  public readonly code?: string;
+  /** Structured BE details (e.g. {reason, retryAfterSec} or {status}). */
+  public readonly details?: unknown;
 
   constructor(statusCode: number, errorPayload: ApiErrorPayload) {
     const msg =
@@ -49,6 +53,10 @@ export class ApiError extends Error {
     this.name = "ApiError";
     this.statusCode = statusCode;
     this.displayMessage = msg;
+    if (typeof errorPayload !== "string") {
+      this.code = errorPayload?.code;
+      this.details = errorPayload?.details;
+    }
     // Restore prototype chain — Error subclassing under es5 targets drops it.
     Object.setPrototypeOf(this, ApiError.prototype);
   }

@@ -5,9 +5,8 @@ import { useProfileStatus } from "@/features/auth/hooks";
 import { colors } from "@/theme/colors";
 
 /**
- * Limited-mode gate. Wrap a gated screen's content: when the user's identity is
- * not yet `complete`, block the content and show a prompt to complete the
- * profile instead.
+ * Limited-mode gate. Wrap a gated screen's content: when the user is not yet
+ * `linked` (binding-verified), block and show a prompt to start the bind flow.
  *
  * Reads the shared `['auth','me']` cache via `useProfileStatus()` (no polling —
  * the dashboard drives updates). On a cold cache (deep-link into a gated tab)
@@ -23,28 +22,28 @@ import { colors } from "@/theme/colors";
  */
 export function ProfileGate({ children }: { children: React.ReactNode }) {
   const me = useProfileStatus();
-  const status = me.data?.profileStatus;
+  const linked = me.data?.linked;
 
   if (me.isPending) return <View className="flex-1 bg-background" />;
-  if (status === "complete") return <>{children}</>;
+  if (linked) return <>{children}</>;
 
-  // incomplete | no_match → limited mode.
+  // Not binding-verified → limited mode → start the bind flow (bill-secret proof).
   return (
     <View className="flex-1 items-center justify-center bg-background px-8">
       <View className="mb-4 h-[72px] w-[72px] items-center justify-center rounded-[22px] bg-aqua-soft">
         <ShieldCheck size={34} color={colors.deep} />
       </View>
       <Text className="text-center text-xl font-extrabold text-foreground">
-        Hoàn tất định danh để dùng tính năng này
+        Liên kết tài khoản để dùng tính năng này
       </Text>
       <Text className="mt-2 text-center text-[13px] leading-relaxed text-muted-foreground">
-        Tính năng này cần hồ sơ khách hàng đã được xác minh. Vui lòng cập nhật định danh của bạn.
+        Tính năng này cần tài khoản đã được liên kết với hồ sơ khách hàng. Xác minh bằng thông tin hóa đơn để mở khóa.
       </Text>
       <Pressable
-        onPress={() => router.push("/register")}
+        onPress={() => router.push("/bind")}
         className="mt-6 h-[50px] w-full max-w-[280px] items-center justify-center rounded-[14px] bg-deep active:opacity-80"
       >
-        <Text className="text-[15px] font-extrabold text-white">Hoàn tất định danh</Text>
+        <Text className="text-[15px] font-extrabold text-white">Liên kết tài khoản</Text>
       </Pressable>
     </View>
   );

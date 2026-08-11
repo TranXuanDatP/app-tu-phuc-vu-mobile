@@ -10,6 +10,9 @@ import type {
   AuthMeResponse,
   RegisterPayload,
   RegisterResponse,
+  ResolveResult,
+  BindPayload,
+  BindResponse,
 } from "@/lib/types/entities";
 
 /** Shared query key for the current user's identity profile (GET /auth/me). */
@@ -119,8 +122,10 @@ export function useProfileStatus(opts?: { poll?: boolean; pollDurationMs?: numbe
     refetchInterval: opts?.poll
       ? (query) => {
           if (!appActive) return false;
-          const status = (query.state.data as AuthMeResponse | undefined)?.profileStatus;
-          if (status === "complete" || status === "no_match") return false; // terminal
+          const me = query.state.data as AuthMeResponse | undefined;
+          // Terminal once the user has a verified binding (gate opens), or once identity
+          // resolution is a dead-end (no_match → needs manual register; polling won't help).
+          if (me?.linked || me?.profileStatus === "no_match") return false;
           if (startedAtRef.current !== null && Date.now() - startedAtRef.current > pollDurationMs) {
             return false; // bounded — stop wasting requests
           }
@@ -169,4 +174,33 @@ export function useSignOut() {
     queryClient.removeQueries({ queryKey: AUTH_ME_KEY });
     router.replace("/login");
   }, [router, queryClient]);
+}
+
+/**
+ * POST /auth/bind-init — resolve the OTP-verified session phone server-side (the mobile
+ * never sends phone). Returns candidates the UI branches on:
+ *  one → challenge; many (≤3) → pick then challenge; many+capped → hotline; none → register.
+ */
+export function useBindInit() {
+  return useMutation<ResolveResult, Error, void>({
+    mutationFn: () => apiClient.post<ResolveResult>("/auth/bind-init"),
+  });
+}
+
+/**
+ * POST /auth/bind — verify a bill-secret against a session-scoped customerRef (the ref
+ * comes from bind-init, never user-typed). On success, invalidate the auth/me cache so
+ * the next read flips `linked` true → gate opens. Lockout (429 BINDING_LOCKED) surfaces
+ * as an ApiError the screen reads `.details.{reason, retryAfterSec}` from.
+ */
+export function useBind() {
+  const queryClient = useQueryClient();
+  return useMutation<BindResponse, Error, BindPayload>({
+    mutationFn: (payload) => apiClient.post<BindResponse>("/auth/bind", payload),
+    onSuccess: (data) => {
+      if (data.bound) {
+        queryClient.invalidateQueries({ queryKey: AUTH_ME_KEY });
+      }
+    },
+  });
 }

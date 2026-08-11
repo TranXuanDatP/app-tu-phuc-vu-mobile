@@ -30,12 +30,11 @@ export default function DashboardScreen() {
   const invoices = useInvoices({ status: "unpaid", limit: 1 });
   const consumption = useConsumption();
   const cutoff = useCutoffSchedule("CP-DMA-1");
-  // Identity status — drives the limited-mode banner. poll=true so that when the
-  // async (RabbitMQ) identity path lands, a `complete`/`no_match` flip is picked
-  // up live and the banner updates without code changes. Bounded + paused on
-  // background (see useProfileStatus).
+  // Binding status — drives the limited-mode banner. poll=true so a `linked` flip (after
+  // a successful bind on the bind screen) is picked up live and the banner updates. Bounded
+  // + paused on background (see useProfileStatus).
   const me = useProfileStatus({ poll: true });
-  const profileComplete = me.data?.profileStatus === "complete";
+  const profileComplete = me.data?.linked === true;
   const bill = invoices.data?.invoices[0];
   const outage = cutoff.data?.schedules[0];
   const insets = useSafeAreaInsets();
@@ -115,24 +114,24 @@ export default function DashboardScreen() {
       </View>
       )}
 
-      {/* Limited-mode banner — until identity is complete */}
+      {/* Limited-mode banner — until the customer binding is verified */}
       {!profileComplete && me.data ? (
         <View className="px-4 pt-4">
           <LinearGradient colors={[colors.deep, colors.aqua]} style={{ borderRadius: 18, padding: 16 }}>
             <View className="flex-row items-center gap-2">
               <ShieldCheck size={18} color="white" />
               <Text className="flex-1 text-[15px] font-bold text-white">
-                Hoàn tất hồ sơ để dùng đầy đủ tính năng
+                Liên kết tài khoản để dùng đầy đủ tính năng
               </Text>
             </View>
             <Text className="mt-1 text-[12.5px] leading-snug text-white/90">
-              Một số tính năng bị giới hạn cho đến khi bạn cập nhật định danh.
+              Một số tính năng bị giới hạn cho đến khi bạn liên kết tài khoản với hồ sơ khách hàng.
             </Text>
             <Pressable
-              onPress={() => router.push("/register")}
+              onPress={() => router.push("/bind")}
               className="mt-3 items-center rounded-xl bg-white py-2.5 active:opacity-80"
             >
-              <Text className="text-[14px] font-extrabold text-deep">Hoàn tất định danh</Text>
+              <Text className="text-[14px] font-extrabold text-deep">Liên kết tài khoản</Text>
             </Pressable>
           </LinearGradient>
         </View>

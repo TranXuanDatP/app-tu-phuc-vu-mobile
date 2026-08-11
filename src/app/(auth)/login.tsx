@@ -6,8 +6,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Input } from "@/components/ui/input";
 import { usePhoneLogin } from "@/features/auth/hooks";
 import { useSession } from "@/lib/auth-client";
-import { apiClient } from "@/lib/api-client";
-import type { CheckRegistrationResponse } from "@/lib/types/entities";
 import { colors } from "@/theme/colors";
 
 // Local VN mobile digits WITHOUT the leading 0 — the +84 prefix is fixed in the UI.
@@ -21,27 +19,14 @@ export default function LoginScreen() {
   const [otp, setOtp] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(0);
 
-  // Post-OTP routing: match the user against Customer 360 by phone. Matched
-  // (existing customer) → dashboard (full). Unmatched → "Bạn chưa đăng ký tài
-  // khoản" → registration. On check error, fall back to the not-registered
-  // screen (safe default — never assume registered).
+  // Post-OTP routing → bind flow. /bind re-resolves via bind-init and branches:
+  // already-linked → dashboard; one/many≤3 → challenge; many-capped → hotline;
+  // none → register. Replaces the legacy check-registration branch (bind-init is
+  // the single resolve path now — check-registration is skipped to avoid a second
+  // resolve and the legacy users.customerId auto-link).
   useEffect(() => {
     if (!session) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await apiClient.post<CheckRegistrationResponse>(
-          "/auth/check-registration",
-        );
-        if (cancelled) return;
-        router.replace(r?.registered ? "/dashboard" : "/not-registered");
-      } catch {
-        if (!cancelled) router.replace("/not-registered");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    router.replace("/bind");
   }, [session]);
 
   // 30s resend countdown while on the OTP step (button enables at 0).

@@ -887,6 +887,49 @@ export interface CheckRegistrationResponse {
   customerId?: string;
 }
 
+// ── Binding (bill-secret proof) ────────────────────────────────────────────
+// Mirror BE ResolveResult (customer-service.client.ts). The bind flow:
+//   /auth/bind-init → ResolveResult → (one | many≤3 | many-capped | none) → /auth/bind.
+export type SecretType = "last_invoice_amount" | "ma_kh";
+
+/** BE-chosen verify factor, described for the UI to render (mobile never picks a factor). */
+export interface ChallengeDescriptor {
+  type: SecretType;
+  /** VI label, e.g. "Số tiền hoá đơn gần nhất". */
+  label: string;
+  inputMode: "numeric" | "text";
+}
+
+export interface ResolveCandidate {
+  customerRef: string;
+  maskedHint: string;
+  challenge: ChallengeDescriptor;
+}
+
+export interface ResolveResult {
+  status: "none" | "one" | "many";
+  customerRef?: string;
+  maskedHint?: string;
+  challenge?: ChallengeDescriptor;
+  candidates?: ResolveCandidate[];
+  /** N>3 matches — too many to disambiguate (shared/recycled phone); route to hotline. */
+  capped?: boolean;
+}
+
+/** Body for POST /auth/bind. customerRef comes from bind-init (never user-typed). */
+export interface BindPayload {
+  customerRef: string;
+  secretType: SecretType;
+  secretValue: string;
+}
+
+/** POST /auth/bind — {bound:true, customerId} on success, {bound:false} on wrong secret.
+ *  Lockout throws an ApiError(429, BINDING_LOCKED) — handled in the screen. */
+export interface BindResponse {
+  bound: boolean;
+  customerId?: string;
+}
+
 // ── Chat (customer ↔ staff, aggregated in omnichannel_be) ───────────────────
 export interface ChatMessage {
   id: string;
