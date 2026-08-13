@@ -10,6 +10,7 @@ import {
   useBind,
   useBindInit,
   useProfileStatus,
+  useSignOut,
 } from "@/features/auth/hooks";
 import { toast } from "@/lib/toast";
 import { ApiError } from "@/lib/types/api";
@@ -34,6 +35,7 @@ export default function BindScreen() {
   const bindInit = useBindInit();
   const bind = useBind();
   const queryClient = useQueryClient();
+  const signOut = useSignOut();
   const [selected, setSelected] = useState<ResolveCandidate | null>(null);
   const [secret, setSecret] = useState("");
   const [lockout, setLockout] = useState<{ reason: string; untilMs: number } | null>(null);
@@ -75,6 +77,8 @@ export default function BindScreen() {
         desc="Vui lòng liên hệ tổng đài để được hỗ trợ liên kết tài khoản."
         cta="Liên hệ tổng đài"
         onCta={() => toast.info("Tổng đài — sắp có")}
+        secondaryCta="Dùng số khác"
+        onSecondary={() => signOut()}
       />
     );
   }
@@ -88,13 +92,21 @@ export default function BindScreen() {
         desc="Số điện thoại của bạn chưa có trong hệ thống. Đăng ký để tạo hồ sơ mới."
         cta="Đăng ký tài khoản"
         onCta={() => router.push("/register")}
+        secondaryCta="Dùng số khác"
+        onSecondary={() => signOut()}
       />
     );
   }
 
   // many (≤3) → pick a candidate by address hint before challenging.
   if (resolve?.status === "many" && !selected) {
-    return <Picker candidates={resolve.candidates ?? []} onPick={setSelected} />;
+    return (
+      <Picker
+        candidates={resolve.candidates ?? []}
+        onPick={setSelected}
+        onSignOut={() => signOut()}
+      />
+    );
   }
 
   const challenge: ChallengeDescriptor | undefined =
@@ -152,6 +164,8 @@ export default function BindScreen() {
         icon={<ShieldCheck size={34} color={colors.deep} />}
         title="Tạm thời khoá liên kết"
         desc={msg}
+        secondaryCta="Dùng số khác"
+        onSecondary={() => signOut()}
       />
     );
   }
@@ -169,6 +183,8 @@ export default function BindScreen() {
           setSecret("");
           bindInit.mutate();
         }}
+        secondaryCta="Dùng số khác"
+        onSecondary={() => signOut()}
       />
     );
   }
@@ -224,6 +240,27 @@ export default function BindScreen() {
           </Text>
         </Pressable>
 
+        <View className="flex-row items-center justify-between">
+          {selected ? (
+            <Pressable
+              onPress={() => {
+                setSelected(null);
+                setSecret("");
+              }}
+              className="py-1"
+            >
+              <Text className="text-[13.5px] font-semibold text-aqua">
+                ← Chọn hồ sơ khác
+              </Text>
+            </Pressable>
+          ) : (
+            <View />
+          )}
+          <Pressable onPress={() => signOut()} className="py-1">
+            <Text className="text-[13.5px] font-semibold text-aqua">Dùng số khác</Text>
+          </Pressable>
+        </View>
+
         <Text className="text-center text-xs leading-relaxed text-muted-foreground">
           Thông tin xác minh được bảo mật và chỉ dùng để liên kết tài khoản.
         </Text>
@@ -239,12 +276,16 @@ function Center({
   desc,
   cta,
   onCta,
+  secondaryCta,
+  onSecondary,
 }: {
   icon: React.ReactNode;
   title: string;
   desc: string;
   cta?: string;
   onCta?: () => void;
+  secondaryCta?: string;
+  onSecondary?: () => void;
 }) {
   return (
     <View className="flex-1 items-center justify-center bg-background px-8">
@@ -263,6 +304,11 @@ function Center({
           <Text className="text-[15px] font-extrabold text-white">{cta}</Text>
         </Pressable>
       ) : null}
+      {secondaryCta && onSecondary ? (
+        <Pressable onPress={onSecondary} className="mt-3 py-2">
+          <Text className="text-[13.5px] font-semibold text-aqua">{secondaryCta}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -271,9 +317,11 @@ function Center({
 function Picker({
   candidates,
   onPick,
+  onSignOut,
 }: {
   candidates: ResolveCandidate[];
   onPick: (c: ResolveCandidate) => void;
+  onSignOut: () => void;
 }) {
   return (
     <ScrollView className="flex-1 bg-background" contentContainerStyle={{ flexGrow: 1 }}>
@@ -297,6 +345,9 @@ function Picker({
             <Text className="mt-1 text-[12px] text-aqua">Chọn hồ sơ này →</Text>
           </Pressable>
         ))}
+        <Pressable onPress={onSignOut} className="mt-2 py-2">
+          <Text className="text-center text-[13.5px] font-semibold text-aqua">Dùng số khác</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );
