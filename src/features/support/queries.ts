@@ -1,16 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useIsFocused } from "@react-navigation/native";
 import { apiClient } from "@/lib/api-client";
-import { toast } from "@/lib/toast";
 import type { ChatConversation, ChatMessage } from "@/lib/types/entities";
 
-/** Query key for the active chat thread (shared by useConversation + useSendMessage). */
+/** Server thread (GET /call-center/messages) — the aggregation truth, polled. */
 export const CHAT_KEY = ["chat", "conversation"] as const;
+/**
+ * Local outbox — messages composed on THIS device. Local-first pipeline: they
+ * render immediately and STAY until the server poll echoes them back (dedup by
+ * id). In-memory (RQ cache) — cleared on app restart; anything the wire accepted
+ * lives server-side, so nothing durable is lost.
+ */
+export const CHAT_OUTBOX_KEY = ["chat", "outbox"] as const;
 
 /**
- * The customer's active chat thread (history + staff replies), aggregated in
- * omnichannel_be. Polls every 4s WHILE THE SCREEN IS FOCUSED so staff replies
- * show up; stops when the user leaves the chat (no background polling).
+ * The customer's active chat thread, aggregated in omnichannel_be. Polls every 4s
+ * WHILE THE SCREEN IS FOCUSED so staff replies show up; stops when the user
+ * leaves the chat (no background polling).
  */
 export function useConversation() {
   const focused = useIsFocused();
@@ -22,45 +28,100 @@ export function useConversation() {
   });
 }
 
-/** POST /call-center/message — send a customer message to CSKH (forwarded to omnichannel). */
-export function useSendMessage() {
+/** Subscribe to the outbox cache (written via setQueryData by the send hooks). */
+export function useOutbox() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (text: string) =>
-      apiClient.post<{ sent: boolean; messageId?: string; conversationId?: string }>(
-        "/call-center/message",
-        { text },
-      ),
-    onSuccess: (data, text) => {
-      // BFF maps wire failure to HTTP 200 + {sent:false} (FE-shape contract) — a 200
-      // is NOT a delivered message. Without this check the optimistic add below gets
-      // wiped by the next poll (GET returns the real thread; wire down = empty), so
-      // the message silently VANISHES ~1-4s after send.
+  return useQuery<ChatMessage[]>({
+    queryKey: CHAT_OUTBOX_KEY,
+    queryFn: () => queryClient.getQueryData<ChatMessage[]>(CHAT_OUTBOX_KEY) ?? [],
+    initialData: [],
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * Local-first thread view: server messages + outbox entries not yet echoed by
+ * the server. A successful send adopts the server's messageId, so once the poll
+ * returns it, the local copy is deduped away. Failed sends stay with a retry
+ * state instead of silently vanishing.
+ */
+export function useChatThread() {
+  const server = useConversation();
+  const outbox = useOutbox();
+  const serverIds = new Set((server.data?.messages ?? []).map((m) => m.id));
+  const pending = (outbox.data ?? []).filter((m) => !serverIds.has(m.id));
+  const messages = [...(server.data?.messages ?? []), ...pending].sort((a, b) =>
+    a.createdAt.localeCompare(b.createdAt),
+  );
+  return {
+    conversationId: server.data?.conversationId ?? null,
+    messages,
+    isLoading: server.isLoading,
+  };
+}
+
+/**
+ * POST /call-center/message + patch the outbox entry (`id`) with the outcome.
+ * BFF maps wire failure to HTTP 200 + {sent:false} (FE-shape contract) — a 200
+ * is NOT a delivered message. Network errors also land in the same failed state.
+ */
+function usePostMessage() {
+  const queryClient = useQueryClient();
+  const patch = (id: string, p: Partial<ChatMessage>) =>
+    queryClient.setQueryData<ChatMessage[]>(CHAT_OUTBOX_KEY, (list) =>
+      (list ?? []).map((m) => (m.id === id ? { ...m, ...p } : m)),
+    );
+  return async (id: string, text: string) => {
+    try {
+      const data = await apiClient.post<{
+        sent: boolean;
+        messageId?: string;
+        conversationId?: string;
+      }>("/call-center/message", { text });
       if (!data.sent) {
-        toast.error("Không gửi được tin nhắn. Thử lại.");
+        patch(id, { status: "failed" });
         return;
       }
-      // Optimistic: show the sent message immediately — don't wait for the next
-      // poll (omnichannel read-after-write can lag a beat after the POST commits).
-      queryClient.setQueryData<ChatConversation>(CHAT_KEY, (prev) => {
-        const msg: ChatMessage = {
-          id: data.messageId ?? `local-${Date.now()}`,
-          content: text,
-          direction: "INBOUND",
-          senderType: "CUSTOMER",
-          createdAt: new Date().toISOString(),
-        };
-        // Dedup by id in case the poll already added it.
-        const existing = prev?.messages ?? [];
-        if (existing.some((m) => m.id === msg.id)) return prev;
-        return {
-          conversationId: prev?.conversationId ?? data.conversationId ?? null,
-          messages: [...existing, msg],
-        };
-      });
-      // Reconcile with the server (poll picks up staff replies too).
-      queryClient.invalidateQueries({ queryKey: CHAT_KEY });
+      // Adopt the server id (when given) so the next poll's echo dedups this
+      // entry away; drop the local status → renders as delivered.
+      patch(id, { status: undefined, id: data.messageId ?? id });
+    } catch {
+      patch(id, { status: "failed" });
+    }
+  };
+}
+
+/** Send: append to the outbox FIRST (renders instantly), then push to the BFF. */
+export function useSendMessage() {
+  const queryClient = useQueryClient();
+  const post = usePostMessage();
+  return useMutation({
+    mutationFn: (text: string) => {
+      const msg: ChatMessage = {
+        id: `local-${Date.now()}`,
+        content: text,
+        direction: "INBOUND",
+        senderType: "CUSTOMER",
+        createdAt: new Date().toISOString(),
+        status: "sending",
+      };
+      queryClient.setQueryData<ChatMessage[]>(CHAT_OUTBOX_KEY, (l) => [...(l ?? []), msg]);
+      return post(msg.id, text);
     },
-    onError: () => toast.error("Không gửi được tin nhắn. Thử lại."),
+  });
+}
+
+/** Retry a failed outbox message — same wire call, entry flips back to "sending". */
+export function useRetryMessage() {
+  const queryClient = useQueryClient();
+  const post = usePostMessage();
+  return useMutation({
+    mutationFn: (msg: ChatMessage) => {
+      queryClient.setQueryData<ChatMessage[]>(
+        CHAT_OUTBOX_KEY,
+        (l) => (l ?? []).map((m) => (m.id === msg.id ? { ...m, status: "sending" } : m)),
+      );
+      return post(msg.id, msg.content);
+    },
   });
 }

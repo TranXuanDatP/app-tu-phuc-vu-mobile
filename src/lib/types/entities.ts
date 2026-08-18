@@ -938,6 +938,11 @@ export interface ChatMessage {
   direction: "INBOUND" | "OUTBOUND";
   senderType: "CUSTOMER" | "AGENT" | "BOT" | "SYSTEM";
   createdAt: string;
+  /**
+   * Local-only delivery state (absent = delivered/confirmed by the server echo).
+   * "sending" = POST in flight; "failed" = wire rejected/down — retryable.
+   */
+  status?: "sending" | "failed";
 }
 
 /** GET /call-center/messages — the customer's active chat thread. */

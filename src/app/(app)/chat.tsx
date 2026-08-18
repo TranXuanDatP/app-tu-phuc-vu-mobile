@@ -9,24 +9,26 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, Send } from "lucide-react-native";
+import { AlertCircle, ArrowLeft, Clock3, Send } from "lucide-react-native";
 import { Input } from "@/components/ui/input";
-import { useConversation, useSendMessage } from "@/features/support/queries";
+import { useChatThread, useRetryMessage, useSendMessage } from "@/features/support/queries";
 import { colors } from "@/theme/colors";
 import type { ChatMessage } from "@/lib/types/entities";
 
 /**
- * Customer ↔ staff chat. Messages are aggregated in omnichannel_be (the agent
- * inbox): this screen READs the active thread (GET /call-center/messages, polled
- * every 4s while focused) and SENDs (POST /call-center/message → omnichannel).
- * Staff replies appear as OUTBOUND/AGENT bubbles on the left.
+ * Customer ↔ staff chat — LOCAL-FIRST pipeline: a message renders in the thread
+ * the moment it is sent (outbox), then is pushed to the BFF → omnichannel_be for
+ * aggregation. The server thread (GET /call-center/messages, polled every 4s
+ * while focused) supplies history + staff replies and confirms our sends by
+ * echo (dedup by id). Failed sends stay visible with a retry tap instead of
+ * silently vanishing. Staff replies render as OUTBOUND/AGENT bubbles on the left.
  */
 export default function ChatScreen() {
-  const { data } = useConversation();
+  const { messages } = useChatThread();
   const send = useSendMessage();
+  const retry = useRetryMessage();
   const [text, setText] = useState("");
   const insets = useSafeAreaInsets();
-  const messages = data?.messages ?? [];
 
   function handleSend() {
     const t = text.trim();
@@ -59,7 +61,7 @@ export default function ChatScreen() {
         keyExtractor={(m: ChatMessage) => m.id}
         inverted={messages.length > 0}
         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16, gap: 10 }}
-        renderItem={({ item }) => <Bubble msg={item} />}
+        renderItem={({ item }) => <Bubble msg={item} onRetry={(m) => retry.mutate(m)} />}
         ListEmptyComponent={
           <View className="mt-24 items-center px-8">
             <Text className="text-center text-sm text-muted-foreground">
@@ -95,7 +97,15 @@ export default function ChatScreen() {
   );
 }
 
-function Bubble({ msg }: { msg: ChatMessage }) {
+const FAILED_RED = "#dc2626";
+
+function Bubble({
+  msg,
+  onRetry,
+}: {
+  msg: ChatMessage;
+  onRetry?: (m: ChatMessage) => void;
+}) {
   // INBOUND = the customer (this app, right); OUTBOUND = staff (left, labelled).
   const mine = msg.direction === "INBOUND";
   return (
@@ -107,12 +117,34 @@ function Bubble({ msg }: { msg: ChatMessage }) {
           </Text>
         ) : null}
         <View
-          className={`rounded-2xl px-3.5 py-2.5 ${mine ? "bg-deep" : "border border-line bg-card"}`}
+          className={`rounded-2xl px-3.5 py-2.5 ${
+            mine ? (msg.status === "failed" ? "border border-line bg-card" : "bg-deep") : "border border-line bg-card"
+          }`}
         >
-          <Text className={`text-[14px] leading-snug ${mine ? "text-white" : "text-foreground"}`}>
+          <Text
+            className={`text-[14px] leading-snug ${mine && msg.status !== "failed" ? "text-white" : "text-foreground"}`}
+          >
             {msg.content}
           </Text>
         </View>
+        {mine && msg.status === "sending" ? (
+          <View className="mt-1 flex-row items-center gap-1 self-end">
+            <Clock3 size={11} color={colors.ink} />
+            <Text className="text-[10px] text-muted-foreground">Đang gửi</Text>
+          </View>
+        ) : null}
+        {mine && msg.status === "failed" ? (
+          <Pressable
+            onPress={() => onRetry?.(msg)}
+            hitSlop={8}
+            className="mt-1 flex-row items-center gap-1 self-end"
+          >
+            <AlertCircle size={11} color={FAILED_RED} />
+            <Text style={{ color: FAILED_RED }} className="text-[10px] font-semibold">
+              Không gửi được — chạm để thử lại
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
