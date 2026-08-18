@@ -32,6 +32,14 @@ export function useSendMessage() {
         { text },
       ),
     onSuccess: (data, text) => {
+      // BFF maps wire failure to HTTP 200 + {sent:false} (FE-shape contract) — a 200
+      // is NOT a delivered message. Without this check the optimistic add below gets
+      // wiped by the next poll (GET returns the real thread; wire down = empty), so
+      // the message silently VANISHES ~1-4s after send.
+      if (!data.sent) {
+        toast.error("Không gửi được tin nhắn. Thử lại.");
+        return;
+      }
       // Optimistic: show the sent message immediately — don't wait for the next
       // poll (omnichannel read-after-write can lag a beat after the POST commits).
       queryClient.setQueryData<ChatConversation>(CHAT_KEY, (prev) => {
