@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -73,6 +74,23 @@ export default function ChatScreen() {
 
       {/* Composer */}
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        {/* Quick-reply chips — scrollable row of common requests */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="border-t border-line bg-card"
+          contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}
+        >
+          {QUICK_MESSAGES.map((q) => (
+            <Pressable
+              key={q}
+              onPress={() => setText(q)}
+              className="rounded-full border border-line bg-background px-3.5 py-1.5 active:opacity-70"
+            >
+              <Text className="text-[12.5px] font-medium text-deep">{q}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
         <View
           style={{ paddingBottom: insets.bottom + 8 }}
           className="flex-row items-center gap-2 border-t border-line bg-card px-3 pt-2"
@@ -98,6 +116,16 @@ export default function ChatScreen() {
 }
 
 const FAILED_RED = "#dc2626";
+
+/** Quick-reply chips — common customer requests; a tap pre-fills the composer. */
+const QUICK_MESSAGES = [
+  "Tra cứu hóa đơn",
+  "Báo mất nước",
+  "Tra chỉ số đồng hồ",
+  "Hỏi giá nước",
+  "Khiếu nại chất lượng nước",
+  "Hỏi lịch cắt nước",
+];
 
 function Bubble({
   msg,

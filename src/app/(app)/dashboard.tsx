@@ -74,7 +74,7 @@ export default function DashboardScreen() {
 
         {/* Bill card — hidden in limited mode (don't leak fixture billing data) */}
         {profileComplete && (
-        <View className="mt-5 rounded-[18px] border border-white/25 bg-white/15 p-4">
+        <View className="mt-5 rounded-[18px] border border-white/25 bg-white/15 p-5">
           {invoices.isLoading ? (
             <Skeleton className="h-20 w-full bg-white/25" />
           ) : bill ? (
@@ -142,7 +142,7 @@ export default function DashboardScreen() {
       <View className="px-4 pt-4">
         <Pressable
           onPress={() => router.push("/meters")}
-          className="flex-row items-center gap-3.5 rounded-[18px] border border-line bg-card p-4 active:opacity-80"
+          className="flex-row items-center gap-3.5 rounded-[18px] border border-line bg-card p-5 active:opacity-80"
         >
           <Ring pct={pct} value={`${formatNumber(current)}m³`} />
           <View className="min-w-0 flex-1">
@@ -217,7 +217,7 @@ function QuickAction({
   return (
     <Pressable
       onPress={onPress}
-      className="flex-1 items-center gap-1.5 rounded-2xl border border-line bg-card p-3 active:opacity-80"
+      className="flex-1 items-center gap-2 rounded-2xl border border-line bg-card px-3 py-4 active:opacity-80"
     >
       <View className="h-11 w-11 items-center justify-center rounded-2xl bg-aqua-soft">
         <Icon size={20} color={colors.deep} />
@@ -240,7 +240,7 @@ function Alert({ title, desc, tone }: { title: string; desc: string; tone: "info
   } as const;
   const icColor = { info: colors.deep, warn: "#8a5410", ok: "#0f6b4c" } as const;
   return (
-    <View className={`flex-row items-start gap-3 rounded-[18px] border p-3.5 ${tones[tone]}`}>
+    <View className={`flex-row items-start gap-3 rounded-[18px] border p-4 ${tones[tone]}`}>
       <View className={`h-9 w-9 shrink-0 items-center justify-center rounded-xl ${ic[tone]}`}>
         <AlertTriangle size={16} color={icColor[tone]} />
       </View>

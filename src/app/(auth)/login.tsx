@@ -76,7 +76,9 @@ export default function LoginScreen() {
               <View className="gap-1.5">
                 <Text className="text-[12.5px] font-semibold text-muted-foreground">Số điện thoại</Text>
                 <View className="flex-row items-center gap-2.5 rounded-[13px] border-[1.5px] border-line bg-card px-3.5 py-3">
-                  <Text className="font-bold text-muted-foreground">+84</Text>
+                  {/* text-base matches the TextInput font — keeps "+84" on the same
+                      baseline as the typed digits (default Text size is smaller). */}
+                  <Text className="text-base font-bold text-muted-foreground">+84</Text>
                   <Input
                     keyboardType="phone-pad"
                     placeholder="912 345 678"
@@ -85,7 +87,7 @@ export default function LoginScreen() {
                       setPhone(v.replace(/\D/g, "").replace(/^0+/, ""));
                       if (phoneError) setPhoneError(null);
                     }}
-                    className="h-auto flex-1 border-0 bg-transparent p-0 text-base"
+                    className="h-8 flex-1 border-0 bg-transparent p-0 text-base leading-none"
                   />
                 </View>
                 {phoneError ? <Text className="text-sm text-destructive">{phoneError}</Text> : null}
