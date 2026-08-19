@@ -163,8 +163,11 @@ export function useSignOut() {
   return useCallback(async () => {
     await authClient.signOut({});
     await linkedKh.remove();
-    // Session changed → the cached profile status belongs to the previous user.
-    queryClient.removeQueries({ queryKey: AUTH_ME_KEY });
+    // Account switch → EVERY cached query belongs to the previous user (customer
+    // profile, invoices, meters, chat thread…). Clearing only AUTH_ME_KEY leaked
+    // the old user's data into the next session — signing in with a different
+    // phone showed the previous account's mock customer on the profile screen.
+    queryClient.clear();
     router.replace("/login");
   }, [router, queryClient]);
 }
