@@ -50,8 +50,11 @@ export function useChatThread() {
   const outbox = useOutbox();
   const serverIds = new Set((server.data?.messages ?? []).map((m) => m.id));
   const pending = (outbox.data ?? []).filter((m) => !serverIds.has(m.id));
+  // DESCENDING (newest first): the FlatList is `inverted` — data[0] renders at the
+  // BOTTOM, so newest-first puts each new message below the previous ones. An
+  // ascending sort made every new message land ABOVE the old ones instead.
   const messages = [...(server.data?.messages ?? []), ...pending].sort((a, b) =>
-    a.createdAt.localeCompare(b.createdAt),
+    b.createdAt.localeCompare(a.createdAt),
   );
   return {
     conversationId: server.data?.conversationId ?? null,
