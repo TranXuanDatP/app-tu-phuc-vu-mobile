@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Droplet, ShieldCheck } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -106,7 +106,13 @@ export default function RegisterScreen() {
 
   return (
     <View className="flex-1 bg-foam">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+      {/* iOS: keyboard đè lên view (không adjustResize như Android) — không có
+          KAV thì phần form dưới bàn phím kéo cỡ nào cũng không thấy được. */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <LinearGradient
           colors={[colors.deep, colors.aqua]}
           style={{ paddingHorizontal: 24, paddingBottom: 32, paddingTop: 64 }}
@@ -230,7 +236,8 @@ export default function RegisterScreen() {
             </Text>
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
