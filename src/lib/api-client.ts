@@ -86,7 +86,10 @@ export class ApiClient {
     }
 
     // Success — tolerate empty/no-content (e.g. 204) without crashing on `.data`.
-    return (json as ApiResponse<T> | undefined)?.data as T;
+    // `json === null` (body "null" — e.g. profile không tồn tại) phải về null,
+    // KHÔNG phải undefined: React Query cấm queryFn resolve undefined
+    // ("Query data cannot be undefined" trên ['customer','profile']).
+    return ((json as ApiResponse<T> | null | undefined)?.data ?? null) as T;
   }
 
   get<T>(path: string, query?: Record<string, unknown> | object) {
