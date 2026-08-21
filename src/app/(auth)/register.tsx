@@ -126,7 +126,10 @@ export default function RegisterScreen() {
           </Text>
         </LinearGradient>
 
-        <View className="flex-1 gap-4 px-6 py-6">
+        {/* KHÔNG dùng flex-1 cho form trong ScrollView: Yoga co form theo viewport
+            thay vì tràn xuống → ScrollView thấy content vừa khít → không kéo được
+            (anti-pattern RN — 2 trường cuối kẹt dưới bàn phím). */}
+        <View className="gap-4 px-6 py-6">
           <FormField
             label="Họ và tên"
             placeholder="Nguyễn Văn A"
