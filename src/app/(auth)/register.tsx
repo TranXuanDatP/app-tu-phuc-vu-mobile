@@ -114,7 +114,7 @@ export default function RegisterScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
-        contentInsetAdjustmentBehavior="automatic"
+        keyboardDismissMode="on-drag"
       >
         <LinearGradient
           colors={[colors.deep, colors.aqua]}
