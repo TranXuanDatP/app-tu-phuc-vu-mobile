@@ -13,6 +13,7 @@ import {
   useSignOut,
 } from "@/features/auth/hooks";
 import { toast } from "@/lib/toast";
+import { openHotline } from "@/lib/hotline";
 import { ApiError } from "@/lib/types/api";
 import type { ChallengeDescriptor, ResolveCandidate } from "@/lib/types/entities";
 import { colors } from "@/theme/colors";
@@ -76,7 +77,7 @@ export default function BindScreen() {
         title="Có nhiều hồ sơ gắn với số này"
         desc="Vui lòng liên hệ tổng đài để được hỗ trợ liên kết tài khoản."
         cta="Liên hệ tổng đài"
-        onCta={() => toast.info("Tổng đài — sắp có")}
+        onCta={() => void openHotline()}
         secondaryCta="Dùng số khác"
         onSecondary={() => signOut()}
       />

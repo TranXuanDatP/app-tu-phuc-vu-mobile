@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Input } from "@/components/ui/input";
 import { usePhoneLogin } from "@/features/auth/hooks";
 import { useSession } from "@/lib/auth-client";
+import { BUILD_ID } from "@/lib/build";
 import { colors } from "@/theme/colors";
 
 // Local VN mobile digits WITHOUT the leading 0 — the +84 prefix is fixed in the UI.
@@ -59,7 +60,12 @@ export default function LoginScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="on-drag"
+      >
         <LinearGradient colors={[colors.deep, colors.aqua]} style={{ paddingHorizontal: 24, paddingBottom: 36, paddingTop: 64 }}>
           <View className="mb-4 h-[70px] w-[70px] items-center justify-center self-center rounded-[22px] bg-white/20">
             <Droplet color="white" size={32} />
@@ -151,6 +157,10 @@ export default function LoginScreen() {
             <ShieldCheck size={16} color={colors.mutedForeground} />
             <Text className="text-[11.5px] text-muted-foreground">Xác thực bảo mật bởi better-auth</Text>
           </View>
+          {/* Build stamp — trả lời "đang chạy bundle nào?" (đóng dấu theo git hash lúc expo start) */}
+          <Text className="mt-1.5 text-center text-[9px] text-muted-foreground/70">
+            build {BUILD_ID}
+          </Text>
         </View>
       </ScrollView>
     </View>

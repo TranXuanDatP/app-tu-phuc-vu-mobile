@@ -23,6 +23,7 @@ import { useCutoffSchedule } from "@/features/water-cutoff/queries";
 import { useProfileStatus } from "@/features/auth/hooks";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { openHotline } from "@/lib/hotline";
 import { colors } from "@/theme/colors";
 
 export default function DashboardScreen() {
@@ -192,7 +193,7 @@ export default function DashboardScreen() {
               <Text className="text-[13px] font-bold text-deep">Chat nhân viên</Text>
             </Pressable>
             <Pressable
-              onPress={() => toast.info("Tổng đài — sắp có")}
+              onPress={() => void openHotline()}
               className="flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-white/20 py-2.5 active:opacity-80"
             >
               <PhoneCall size={16} color={colors.white} />
