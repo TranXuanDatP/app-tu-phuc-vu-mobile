@@ -6,6 +6,11 @@ import { toast } from "@/lib/toast";
  * (dashboard, bind capped-view, profile, empty-state hồ sơ). Hotline là một
  * nhánh escalation THẬT của binding flow — hai số khác nhau ở hai chỗ là lỗi
  * nghiệp vụ, không phải lỗi hiển thị.
+ *
+ * ⚠️ CHƯA XÁC NHẬN VỚI QUAWACO (Pc 2026-08-21): 19001008 là số có sẵn từ code
+ * cũ (profile.tsx), KHÔNG có bằng chứng công khai đó là hotline CSKH cấp nước.
+ * Sai số trước mặt khách = mở dialer nhầm đầu dây. Pc xác nhận số thật → đổi
+ * ĐÚNG 1 DÒNG này là toàn app theo.
  */
 export const HOTLINE = "19001008";
 

@@ -11,6 +11,10 @@ const app = require("./app.json").expo;
 let buildId = "unknown";
 try {
   buildId = execSync("git rev-parse --short HEAD", { cwd: __dirname }).toString().trim();
+  // Dirty marker: short hash = commit cuối, KHÔNG thấy thay đổi chưa commit —
+  // verify với working tree bẩn thì bundle chứa code ngoài các commit đã list.
+  const dirty = execSync("git status --porcelain", { cwd: __dirname }).toString().trim();
+  if (dirty) buildId += "-dirty";
 } catch {
   // Không có git trong PATH — giữ "unknown".
 }
